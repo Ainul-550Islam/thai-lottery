@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
+         bootstrap="vendor/autoload.php"
+         colors="true"
+         failOnRisky="true"
+         failOnWarning="true"
+         cacheDirectory=".phpunit.cache">
+    <testsuites>
+        <testsuite name="Unit">
+            <directory>tests/Unit</directory>
+        </testsuite>
+        <testsuite name="Feature">
+            <directory>tests/Feature</directory>
+        </testsuite>
+        <testsuite name="Integration">
+            <directory>tests/Integration</directory>
+        </testsuite>
+        <testsuite name="Security">
+            <directory>tests/Security</directory>
+        </testsuite>
+    </testsuites>
+    <source>
+        <include>
+            <directory>app</directory>
+        </include>
+    </source>
+    <php>
+        <env name="APP_ENV" value="testing"/>
+        <env name="APP_KEY" value="base64:ZdZRVoeGZh2IQXa67+qdQzaPbjnFovX4CCE0YgWHJI8="/>
+        <env name="APP_DEBUG" value="false"/>
+        <!--
+            A FILE-BACKED SQLite database, not :memory:.
+            The Phase 4.3+ suites use DatabaseTruncation (not RefreshDatabase) because a
+            purchase refuses to run inside an outer transaction. Truncation commits, so the
+            schema must outlive the per-test application refresh - which an in-memory
+            database cannot do. The name stays `thai_lottery_test` because every suite
+            carries a fail-safe guard that refuses to touch any other database name.
+            Tests\TestCase migrates it once per process if it is empty.
+        -->
+        <env name="DB_CONNECTION" value="sqlite"/>
+        <env name="DB_DATABASE" value="database/thai_lottery_test"/>
+        <env name="DB_FOREIGN_KEYS" value="true"/>
+        <env name="CACHE_STORE" value="array"/>
+        <env name="SESSION_DRIVER" value="array"/>
+        <env name="QUEUE_CONNECTION" value="sync"/>
+        <env name="BROADCAST_CONNECTION" value="log"/>
+        <!-- `array` is not a configured disk in config/filesystems.php; using it made any
+             Storage call in a test fail with "Disk [array] does not have a configured driver". -->
+        <env name="FILESYSTEM_DISK" value="local"/>
+    </php>
+</phpunit>
