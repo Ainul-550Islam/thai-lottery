@@ -79,6 +79,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'webhook.signature' => \App\Http\Middleware\VerifyWebhookSignature::class,
         ]);
 
+        $middleware->append(\App\Http\Middleware\CorrelationIdMiddleware::class);
         $middleware->append(\App\Http\Middleware\SecurityHeaders::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

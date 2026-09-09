@@ -1,13 +1,26 @@
 <?php
 
+use App\Models\User;
 use Illuminate\Support\Facades\Broadcast;
 
 /*
 |--------------------------------------------------------------------------
-| Broadcast Channels
+| Broadcast Channels — Thai Lottery Platform
 |--------------------------------------------------------------------------
-|
-| Phase 1 placeholder. Live draw/result channels are added in the
-| real-time (Reverb) phase.
-|
 */
+
+Broadcast::channel('App.Models.User.{id}', function ($user, $id) {
+    return (int) $user->id === (int) $id;
+});
+
+Broadcast::channel('user.{id}', function ($user, $id) {
+    return (int) $user->id === (int) $id;
+});
+
+Broadcast::channel('draws', function () {
+    return true;
+});
+
+Broadcast::channel('draw.{id}', function () {
+    return true;
+});

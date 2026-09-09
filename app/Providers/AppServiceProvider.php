@@ -65,14 +65,12 @@ class AppServiceProvider extends ServiceProvider
 
         $apiPerMinute = (int) config('security.rate_limits.api.max_per_minute', 60);
         $betPerMinute = (int) config('security.rate_limits.bet.max_per_minute', 10);
+        $depositPerHour = (int) config('security.rate_limits.deposit.max_per_hour', 5);
+        $withdrawalPerDay = (int) config('security.rate_limits.withdrawal.max_per_day', 3);
+        $webhookPerMinute = (int) config('security.rate_limits.webhook.max_per_minute', 120);
 
         RateLimiter::for('api', function (Request $request) use ($apiPerMinute): Limit {
             $identifier = $request->user()?->getAuthIdentifier();
-
-            // 'user_or_ip' per config: an authenticated caller is limited as themselves, and
-            // an unauthenticated one - which on this surface means a request that will be
-            // rejected by auth middleware anyway - is limited by IP so that unauthenticated
-            // traffic cannot be used to exhaust a real user's allowance.
             return Limit::perMinute($apiPerMinute)
                 ->by($identifier === null ? 'ip:'.$request->ip() : 'user:'.$identifier)
                 ->response($this->throttleResponse());
@@ -80,17 +78,49 @@ class AppServiceProvider extends ServiceProvider
 
         RateLimiter::for('bet', function (Request $request) use ($betPerMinute): Limit {
             $identifier = $request->user()?->getAuthIdentifier();
-
-            if ($identifier === null) {
-                // Should not occur behind auth:sanctum. Falling back to the IP is the safe
-                // direction: an unkeyed limiter would be no limiter at all.
-                return Limit::perMinute($betPerMinute)
-                    ->by('bet:ip:'.$request->ip())
-                    ->response($this->throttleResponse());
-            }
-
             return Limit::perMinute($betPerMinute)
-                ->by('bet:user:'.$identifier)
+                ->by($identifier === null ? 'bet:ip:'.$request->ip() : 'bet:user:'.$identifier)
+                ->response($this->throttleResponse());
+        });
+
+        RateLimiter::for('deposit', function (Request $request) use ($depositPerHour): Limit {
+            $identifier = $request->user()?->getAuthIdentifier();
+            return Limit::perHour($depositPerHour)
+                ->by($identifier === null ? 'deposit:ip:'.$request->ip() : 'deposit:user:'.$identifier)
+                ->response($this->throttleResponse());
+        });
+
+        RateLimiter::for('withdrawal', function (Request $request) use ($withdrawalPerDay): Limit {
+            $identifier = $request->user()?->getAuthIdentifier();
+            return Limit::perDay($withdrawalPerDay)
+                ->by($identifier === null ? 'withdrawal:ip:'.$request->ip() : 'withdrawal:user:'.$identifier)
+                ->response($this->throttleResponse());
+        });
+
+        RateLimiter::for('webhook', function (Request $request) use ($webhookPerMinute): Limit {
+            return Limit::perMinute($webhookPerMinute)
+                ->by('webhook:ip:'.$request->ip())
+                ->response($this->throttleResponse());
+        });
+
+        RateLimiter::for('player-api', function (Request $request) use ($apiPerMinute): Limit {
+            $identifier = $request->user()?->getAuthIdentifier();
+            return Limit::perMinute($apiPerMinute)
+                ->by($identifier === null ? 'player:ip:'.$request->ip() : 'player:user:'.$identifier)
+                ->response($this->throttleResponse());
+        });
+
+        RateLimiter::for('player-bet-placement', function (Request $request) use ($betPerMinute): Limit {
+            $identifier = $request->user()?->getAuthIdentifier();
+            return Limit::perMinute($betPerMinute)
+                ->by($identifier === null ? 'player-bet:ip:'.$request->ip() : 'player-bet:user:'.$identifier)
+                ->response($this->throttleResponse());
+        });
+
+        RateLimiter::for('financial-critical', function (Request $request): Limit {
+            $identifier = $request->user()?->getAuthIdentifier();
+            return Limit::perMinute(30)
+                ->by($identifier === null ? 'fin:ip:'.$request->ip() : 'fin:user:'.$identifier)
                 ->response($this->throttleResponse());
         });
     }

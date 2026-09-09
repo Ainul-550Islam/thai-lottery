@@ -1,0 +1,119 @@
+[2026-09-03 14:34:08] production.ERROR: Please provide a valid cache path. {"exception":"[object] (InvalidArgumentException(code: 0): Please provide a valid cache path. at /home/user/vendor/laravel/framework/src/Illuminate/View/Compilers/Compiler.php:67)
+[stacktrace]
+#0 /home/user/vendor/laravel/framework/src/Illuminate/View/ViewServiceProvider.php(97): Illuminate\\View\\Compilers\\Compiler->__construct()
+#1 /home/user/vendor/laravel/framework/src/Illuminate/Container/Container.php(952): Illuminate\\View\\ViewServiceProvider->{closure:Illuminate\\View\\ViewServiceProvider::registerBladeCompiler():96}()
+#2 /home/user/vendor/laravel/framework/src/Illuminate/Container/Container.php(832): Illuminate\\Container\\Container->build()
+#3 /home/user/vendor/laravel/framework/src/Illuminate/Foundation/Application.php(1078): Illuminate\\Container\\Container->resolve()
+#4 /home/user/vendor/laravel/framework/src/Illuminate/Container/Container.php(763): Illuminate\\Foundation\\Application->resolve()
+#5 /home/user/vendor/laravel/framework/src/Illuminate/Foundation/Application.php(1058): Illuminate\\Container\\Container->make()
+#6 /home/user/vendor/laravel/framework/src/Illuminate/Container/Container.php(1580): Illuminate\\Foundation\\Application->make()
+#7 /home/user/vendor/laravel/framework/src/Illuminate/Support/Facades/Facade.php(239): Illuminate\\Container\\Container->offsetGet()
+#8 /home/user/vendor/laravel/framework/src/Illuminate/Support/Facades/Facade.php(210): Illuminate\\Support\\Facades\\Facade::resolveFacadeInstance()
+#9 /home/user/vendor/laravel/framework/src/Illuminate/Support/Facades/Facade.php(355): Illuminate\\Support\\Facades\\Facade::getFacadeRoot()
+#10 /home/user/vendor/blade-ui-kit/blade-icons/src/BladeIconsServiceProvider.php(122): Illuminate\\Support\\Facades\\Facade::__callStatic()
+#11 /home/user/vendor/blade-ui-kit/blade-icons/src/BladeIconsServiceProvider.php(27): BladeUI\\Icons\\BladeIconsServiceProvider->bootDirectives()
+#12 /home/user/vendor/laravel/framework/src/Illuminate/Container/BoundMethod.php(36): BladeUI\\Icons\\BladeIconsServiceProvider->boot()
+#13 /home/user/vendor/laravel/framework/src/Illuminate/Container/Util.php(43): Illuminate\\Container\\BoundMethod::{closure:Illuminate\\Container\\BoundMethod::call():35}()
+#14 /home/user/vendor/laravel/framework/src/Illuminate/Container/BoundMethod.php(95): Illuminate\\Container\\Util::unwrapIfClosure()
+#15 /home/user/vendor/laravel/framework/src/Illuminate/Container/BoundMethod.php(35): Illuminate\\Container\\BoundMethod::callBoundMethod()
+#16 /home/user/vendor/laravel/framework/src/Illuminate/Container/Container.php(696): Illuminate\\Container\\BoundMethod::call()
+#17 /home/user/vendor/laravel/framework/src/Illuminate/Foundation/Application.php(1151): Illuminate\\Container\\Container->call()
+#18 /home/user/vendor/laravel/framework/src/Illuminate/Foundation/Application.php(1132): Illuminate\\Foundation\\Application->bootProvider()
+#19 [internal function]: Illuminate\\Foundation\\Application->{closure:Illuminate\\Foundation\\Application::boot():1131}()
+#20 /home/user/vendor/laravel/framework/src/Illuminate/Foundation/Application.php(1131): array_walk()
+#21 /home/user/vendor/laravel/framework/src/Illuminate/Foundation/Bootstrap/BootProviders.php(17): Illuminate\\Foundation\\Application->boot()
+#22 /home/user/vendor/laravel/framework/src/Illuminate/Foundation/Application.php(342): Illuminate\\Foundation\\Bootstrap\\BootProviders->bootstrap()
+#23 /home/user/vendor/laravel/framework/src/Illuminate/Foundation/Console/Kernel.php(474): Illuminate\\Foundation\\Application->bootstrapWith()
+#24 /home/user/vendor/laravel/framework/src/Illuminate/Foundation/Console/Kernel.php(196): Illuminate\\Foundation\\Console\\Kernel->bootstrap()
+#25 /home/user/vendor/laravel/framework/src/Illuminate/Foundation/Application.php(1235): Illuminate\\Foundation\\Console\\Kernel->handle()
+#26 /home/user/artisan(15): Illuminate\\Foundation\\Application->handleCommand()
+#27 {main}
+"} 
+[2026-09-04 14:18:43] testing.CRITICAL: [FINANCIAL ALERT] Audit Warning: Suspicious transaction pattern detected {"draw_id":123} 
+[2026-09-04 14:31:48] testing.CRITICAL: [FINANCIAL ALERT] Audit Warning: Suspicious transaction pattern detected {"draw_id":123} 
+[2026-09-04 14:35:18] testing.CRITICAL: [FINANCIAL ALERT] Audit Warning: Suspicious transaction pattern detected {"draw_id":123} 
+[2026-09-04 14:37:21] testing.CRITICAL: [FINANCIAL ALERT] Audit Warning: Suspicious transaction pattern detected {"draw_id":123} 
+[2026-09-04 19:17:46] testing.CRITICAL: [FINANCIAL ALERT] Audit Warning: Suspicious transaction pattern detected {"draw_id":123} 
+[2026-09-04 19:44:28] testing.CRITICAL: [FINANCIAL ALERT] Audit Warning: Suspicious transaction pattern detected {"draw_id":123} 
+[2026-09-04 19:47:41] testing.CRITICAL: [FINANCIAL ALERT] Audit Warning: Suspicious transaction pattern detected {"draw_id":123} 
+[2026-09-04 19:48:43] testing.CRITICAL: [FINANCIAL ALERT] Audit Warning: Suspicious transaction pattern detected {"draw_id":123} 
+[2026-09-04 19:51:35] testing.CRITICAL: [FINANCIAL ALERT] Audit Warning: Suspicious transaction pattern detected {"draw_id":123} 
+[2026-09-04 19:57:39] testing.CRITICAL: [FINANCIAL ALERT] Audit Warning: Suspicious transaction pattern detected {"draw_id":123} 
+[2026-09-04 19:59:13] testing.CRITICAL: [FINANCIAL ALERT] Audit Warning: Suspicious transaction pattern detected {"draw_id":123} 
+[2026-09-04 20:00:43] testing.CRITICAL: [FINANCIAL ALERT] Audit Warning: Suspicious transaction pattern detected {"draw_id":123} 
+[2026-09-05 09:07:45] testing.CRITICAL: [FINANCIAL ALERT] Audit Warning: Suspicious transaction pattern detected {"draw_id":123} 
+[2026-09-05 09:20:57] testing.CRITICAL: [FINANCIAL ALERT] Audit Warning: Suspicious transaction pattern detected {"draw_id":123} 
+[2026-09-05 09:21:31] testing.CRITICAL: [FINANCIAL ALERT] Audit Warning: Suspicious transaction pattern detected {"draw_id":123} 
+[2026-09-05 09:21:43] testing.CRITICAL: [FINANCIAL ALERT] Audit Warning: Suspicious transaction pattern detected {"draw_id":123} 
+[2026-09-05 09:22:10] testing.CRITICAL: [FINANCIAL ALERT] Audit Warning: Suspicious transaction pattern detected {"draw_id":123} 
+[2026-09-05 09:30:05] testing.CRITICAL: [FINANCIAL ALERT] Audit Warning: Suspicious transaction pattern detected {"draw_id":123} 
+[2026-09-05 09:34:17] testing.CRITICAL: [FINANCIAL ALERT] Audit Warning: Suspicious transaction pattern detected {"draw_id":123} 
+[2026-09-05 09:34:58] testing.CRITICAL: [FINANCIAL ALERT] Audit Warning: Suspicious transaction pattern detected {"draw_id":123} 
+[2026-09-05 09:52:27] testing.CRITICAL: [FINANCIAL ALERT] Audit Warning: Suspicious transaction pattern detected {"draw_id":123} 
+[2026-09-05 09:55:57] testing.CRITICAL: [FINANCIAL ALERT] Audit Warning: Suspicious transaction pattern detected {"draw_id":123} 
+[2026-09-05 09:57:23] testing.CRITICAL: [FINANCIAL ALERT] Audit Warning: Suspicious transaction pattern detected {"draw_id":123} 
+[2026-09-05 09:58:48] testing.CRITICAL: [FINANCIAL ALERT] Audit Warning: Suspicious transaction pattern detected {"draw_id":123} 
+[2026-09-05 10:12:07] testing.CRITICAL: [FINANCIAL ALERT] Audit Warning: Suspicious transaction pattern detected {"draw_id":123} 
+[2026-09-05 10:15:18] testing.CRITICAL: [FINANCIAL ALERT] Audit Warning: Suspicious transaction pattern detected {"draw_id":123} 
+[2026-09-05 10:16:35] testing.CRITICAL: [FINANCIAL ALERT] Audit Warning: Suspicious transaction pattern detected {"draw_id":123} 
+[2026-09-05 10:24:26] testing.CRITICAL: [FINANCIAL ALERT] Audit Warning: Suspicious transaction pattern detected {"draw_id":123} 
+[2026-09-05 10:25:52] testing.CRITICAL: [FINANCIAL ALERT] Audit Warning: Suspicious transaction pattern detected {"draw_id":123} 
+[2026-09-05 10:39:49] testing.CRITICAL: [FINANCIAL ALERT] Audit Warning: Suspicious transaction pattern detected {"draw_id":123} 
+[2026-09-05 11:03:00] testing.CRITICAL: [FINANCIAL ALERT] Audit Warning: Suspicious transaction pattern detected {"draw_id":123} 
+[2026-09-05 11:09:55] testing.CRITICAL: [FINANCIAL ALERT] Audit Warning: Suspicious transaction pattern detected {"draw_id":123} 
+[2026-09-05 11:14:37] testing.CRITICAL: [FINANCIAL ALERT] Audit Warning: Suspicious transaction pattern detected {"draw_id":123} 
+[2026-09-05 11:16:48] testing.CRITICAL: [FINANCIAL ALERT] Audit Warning: Suspicious transaction pattern detected {"draw_id":123} 
+[2026-09-05 11:18:28] testing.CRITICAL: [FINANCIAL ALERT] Audit Warning: Suspicious transaction pattern detected {"draw_id":123} 
+[2026-09-05 11:40:01] testing.CRITICAL: [FINANCIAL ALERT] Audit Warning: Suspicious transaction pattern detected {"draw_id":123} 
+[2026-09-05 17:36:56] testing.CRITICAL: [FINANCIAL ALERT] Audit Warning: Suspicious transaction pattern detected {"draw_id":123} 
+[2026-09-05 17:42:59] testing.CRITICAL: [FINANCIAL ALERT] Audit Warning: Suspicious transaction pattern detected {"draw_id":123} 
+[2026-09-05 17:46:48] testing.CRITICAL: [FINANCIAL ALERT] Audit Warning: Suspicious transaction pattern detected {"draw_id":123} 
+[2026-09-05 17:49:02] testing.CRITICAL: [FINANCIAL ALERT] Audit Warning: Suspicious transaction pattern detected {"draw_id":123} 
+[2026-09-05 17:51:03] testing.CRITICAL: [FINANCIAL ALERT] Audit Warning: Suspicious transaction pattern detected {"draw_id":123} 
+[2026-09-05 17:55:27] testing.CRITICAL: [FINANCIAL ALERT] Audit Warning: Suspicious transaction pattern detected {"draw_id":123} 
+[2026-09-05 17:55:37] testing.CRITICAL: [FINANCIAL ALERT] Audit Warning: Suspicious transaction pattern detected {"draw_id":123} 
+[2026-09-05 18:00:35] testing.CRITICAL: [FINANCIAL ALERT] Audit Warning: Suspicious transaction pattern detected {"draw_id":123} 
+[2026-09-05 18:00:51] testing.CRITICAL: [FINANCIAL ALERT] Audit Warning: Suspicious transaction pattern detected {"draw_id":123} 
+[2026-09-05 18:01:07] testing.CRITICAL: [FINANCIAL ALERT] Audit Warning: Suspicious transaction pattern detected {"draw_id":123} 
+[2026-09-06 09:12:06] testing.CRITICAL: [FINANCIAL ALERT] Audit Warning: Suspicious transaction pattern detected {"draw_id":123} 
+[2026-09-06 09:14:06] testing.CRITICAL: [FINANCIAL ALERT] Audit Warning: Suspicious transaction pattern detected {"draw_id":123} 
+[2026-09-06 09:15:14] testing.CRITICAL: [FINANCIAL ALERT] Audit Warning: Suspicious transaction pattern detected {"draw_id":123} 
+[2026-09-06 09:19:33] testing.CRITICAL: [FINANCIAL ALERT] Audit Warning: Suspicious transaction pattern detected {"draw_id":123} 
+[2026-09-06 09:26:16] testing.CRITICAL: [FINANCIAL ALERT] Audit Warning: Suspicious transaction pattern detected {"draw_id":123} 
+[2026-09-06 09:39:13] testing.CRITICAL: [FINANCIAL ALERT] Audit Warning: Suspicious transaction pattern detected {"draw_id":123} 
+[2026-09-06 09:43:49] testing.CRITICAL: [FINANCIAL ALERT] Audit Warning: Suspicious transaction pattern detected {"draw_id":123} 
+[2026-09-06 09:45:45] testing.CRITICAL: [FINANCIAL ALERT] Audit Warning: Suspicious transaction pattern detected {"draw_id":123} 
+[2026-09-06 09:45:54] testing.CRITICAL: [FINANCIAL ALERT] Audit Warning: Suspicious transaction pattern detected {"draw_id":123} 
+[2026-09-06 09:46:03] testing.CRITICAL: [FINANCIAL ALERT] Audit Warning: Suspicious transaction pattern detected {"draw_id":123} 
+[2026-09-06 09:46:59] testing.CRITICAL: [FINANCIAL ALERT] Audit Warning: Suspicious transaction pattern detected {"draw_id":123} 
+[2026-09-06 09:54:58] testing.CRITICAL: [FINANCIAL ALERT] Audit Warning: Suspicious transaction pattern detected {"draw_id":123} 
+[2026-09-06 09:56:40] testing.CRITICAL: [FINANCIAL ALERT] Audit Warning: Suspicious transaction pattern detected {"draw_id":123} 
+[2026-09-06 09:58:41] testing.CRITICAL: [FINANCIAL ALERT] Audit Warning: Suspicious transaction pattern detected {"draw_id":123} 
+[2026-09-06 10:00:05] testing.CRITICAL: [FINANCIAL ALERT] Audit Warning: Suspicious transaction pattern detected {"draw_id":123} 
+[2026-09-06 10:45:33] testing.CRITICAL: [FINANCIAL ALERT] Audit Warning: Suspicious transaction pattern detected {"draw_id":123} 
+[2026-09-06 10:55:49] testing.CRITICAL: [FINANCIAL ALERT] Audit Warning: Suspicious transaction pattern detected {"draw_id":123} 
+[2026-09-06 10:57:32] testing.CRITICAL: [FINANCIAL ALERT] Audit Warning: Suspicious transaction pattern detected {"draw_id":123} 
+[2026-09-06 10:58:05] testing.CRITICAL: [FINANCIAL ALERT] Audit Warning: Suspicious transaction pattern detected {"draw_id":123} 
+[2026-09-06 10:58:47] testing.CRITICAL: [FINANCIAL ALERT] Audit Warning: Suspicious transaction pattern detected {"draw_id":123} 
+[2026-09-06 10:59:10] testing.CRITICAL: [FINANCIAL ALERT] Audit Warning: Suspicious transaction pattern detected {"draw_id":123} 
+[2026-09-06 10:59:30] testing.CRITICAL: [FINANCIAL ALERT] Audit Warning: Suspicious transaction pattern detected {"draw_id":123} 
+[2026-09-06 11:00:00] testing.CRITICAL: [FINANCIAL ALERT] Audit Warning: Suspicious transaction pattern detected {"draw_id":123} 
+[2026-09-06 11:00:17] testing.CRITICAL: [FINANCIAL ALERT] Audit Warning: Suspicious transaction pattern detected {"draw_id":123} 
+[2026-09-06 11:00:40] testing.CRITICAL: [FINANCIAL ALERT] Audit Warning: Suspicious transaction pattern detected {"draw_id":123} 
+[2026-09-06 11:02:19] testing.CRITICAL: [FINANCIAL ALERT] Audit Warning: Suspicious transaction pattern detected {"draw_id":123} 
+[2026-09-06 11:05:20] testing.CRITICAL: [FINANCIAL ALERT] Audit Warning: Suspicious transaction pattern detected {"draw_id":123} 
+[2026-09-07 17:46:29] testing.CRITICAL: [FINANCIAL ALERT] Audit Warning: Suspicious transaction pattern detected {"draw_id":123} 
+[2026-09-07 17:49:49] testing.CRITICAL: [FINANCIAL ALERT] Audit Warning: Suspicious transaction pattern detected {"draw_id":123} 
+[2026-09-07 17:53:46] testing.CRITICAL: [FINANCIAL ALERT] Audit Warning: Suspicious transaction pattern detected {"draw_id":123} 
+[2026-09-07 17:59:44] testing.CRITICAL: [FINANCIAL ALERT] Audit Warning: Suspicious transaction pattern detected {"draw_id":123} 
+[2026-09-07 18:01:20] testing.CRITICAL: [FINANCIAL ALERT] Audit Warning: Suspicious transaction pattern detected {"draw_id":123} 
+[2026-09-07 18:01:32] testing.CRITICAL: [FINANCIAL ALERT] Audit Warning: Suspicious transaction pattern detected {"draw_id":123} 
+[2026-09-07 18:01:44] testing.CRITICAL: [FINANCIAL ALERT] Audit Warning: Suspicious transaction pattern detected {"draw_id":123} 
+[2026-09-07 18:01:54] testing.CRITICAL: [FINANCIAL ALERT] Audit Warning: Suspicious transaction pattern detected {"draw_id":123} 
+[2026-09-07 18:02:05] testing.CRITICAL: [FINANCIAL ALERT] Audit Warning: Suspicious transaction pattern detected {"draw_id":123} 
+[2026-09-07 18:02:39] testing.CRITICAL: [FINANCIAL ALERT] Audit Warning: Suspicious transaction pattern detected {"draw_id":123} 
+[2026-09-07 18:03:06] testing.CRITICAL: [FINANCIAL ALERT] Audit Warning: Suspicious transaction pattern detected {"draw_id":123} 
+[2026-09-07 18:03:23] testing.CRITICAL: [FINANCIAL ALERT] Audit Warning: Suspicious transaction pattern detected {"draw_id":123} 
+[2026-09-07 18:03:51] testing.CRITICAL: [FINANCIAL ALERT] Audit Warning: Suspicious transaction pattern detected {"draw_id":123} 
+[2026-09-07 18:05:01] testing.CRITICAL: [FINANCIAL ALERT] Audit Warning: Suspicious transaction pattern detected {"draw_id":123} 
+[2026-09-07 18:06:25] testing.CRITICAL: [FINANCIAL ALERT] Audit Warning: Suspicious transaction pattern detected {"draw_id":123} 

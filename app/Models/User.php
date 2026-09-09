@@ -194,9 +194,48 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmailContr
         return $this->status === UserStatus::Active;
     }
 
+    public function isSelfExcluded(): bool
+    {
+        if (isset($this->self_exclusion_until) && $this->self_exclusion_until !== null) {
+            return \Carbon\Carbon::parse($this->self_exclusion_until)->isFuture();
+        }
+
+        $limit = $this->responsibleGamingLimits()->first();
+        if ($limit && $limit->self_excluded_until !== null) {
+            return \Carbon\Carbon::parse($limit->self_excluded_until)->isFuture();
+        }
+
+        return false;
+    }
+
     public function canTransact(): bool
     {
-        return $this->isActive();
+        return $this->isActive() && ! $this->isSelfExcluded();
+    }
+
+    public function kycStatus(): \App\Enums\KycStatus
+    {
+        if (isset($this->attributes['kyc_status'])) {
+            $val = $this->attributes['kyc_status'];
+            return $val instanceof \App\Enums\KycStatus ? $val : (\App\Enums\KycStatus::tryFrom((string) $val) ?? \App\Enums\KycStatus::Unverified);
+        }
+
+        $latest = $this->kycDocuments()->latest('id')->first();
+        if ($latest && $latest->status instanceof \App\Enums\KycStatus) {
+            return $latest->status;
+        }
+
+        return \App\Enums\KycStatus::Unverified;
+    }
+
+    public function kycDocuments(): HasMany
+    {
+        return $this->hasMany(KycDocument::class);
+    }
+
+    public function responsibleGamingLimits(): HasMany
+    {
+        return $this->hasMany(ResponsibleGamingLimit::class);
     }
 
     public function isAgent(): bool

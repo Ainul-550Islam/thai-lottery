@@ -52,6 +52,45 @@ class AuditLog extends Model
      */
     public const UPDATED_AT = null;
 
+    protected static function booted(): void
+    {
+        static::creating(function (AuditLog $log) {
+            if (empty($log->request_id)) {
+                $log->request_id = \App\Services\Observability\CorrelationContext::get();
+            }
+
+            $sensitiveKeys = (array) config('security.audit.sensitive_fields', [
+                'password', 'password_confirmation', 'token', 'secret', 'card_number', 'cvv', 'pin', 'bank_account',
+            ]);
+            $placeholder = config('security.audit.redaction_placeholder', '[REDACTED]');
+
+            $redact = function ($data) use (&$redact, $sensitiveKeys, $placeholder) {
+                if (! is_array($data)) return $data;
+                $cleaned = [];
+                foreach ($data as $k => $v) {
+                    if (in_array(strtolower((string) $k), $sensitiveKeys, true)) {
+                        $cleaned[$k] = $placeholder;
+                    } elseif (is_array($v)) {
+                        $cleaned[$k] = $redact($v);
+                    } else {
+                        $cleaned[$k] = $v;
+                    }
+                }
+                return $cleaned;
+            };
+
+            if (is_array($log->old_values)) {
+                $log->old_values = $redact($log->old_values);
+            }
+            if (is_array($log->new_values)) {
+                $log->new_values = $redact($log->new_values);
+            }
+            if (is_array($log->metadata)) {
+                $log->metadata = $redact($log->metadata);
+            }
+        });
+    }
+
     /**
      * Every column is written once, at insert time, by the audit service.
      *

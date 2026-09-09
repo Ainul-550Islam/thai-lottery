@@ -33,4 +33,14 @@ class DrawPolicy extends BasePolicy
     {
         return $this->can($user, 'delete');
     }
+
+    public function close(User $user, Draw $model): bool
+    {
+        return $user->isAdmin() || $this->can($user, 'close');
+    }
+
+    public function cancel(User $user, Draw $model): bool
+    {
+        return $user->isAdmin() || $this->can($user, 'cancel');
+    }
 }
