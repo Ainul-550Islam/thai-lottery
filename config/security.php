@@ -148,13 +148,8 @@ return [
             'refresh_token',
             'webhook_secret',
             'payout_details',
-            'card_number',
-            'cvv',
-            'pin',
-            'bank_account',
-            'account_number',
         ],
-        'redaction_placeholder' => '[REDACTED]',
+        'redaction_placeholder' => '[redacted]',
     ],
 
     /*

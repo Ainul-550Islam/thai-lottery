@@ -70,11 +70,6 @@ class Agent extends Model
         return $this->status === AgentStatus::Active;
     }
 
-    public function canAcceptPlayers(): bool
-    {
-        return $this->isActive();
-    }
-
     public function canEarnCommission(): bool
     {
         return $this->status->canOperate();

@@ -17,8 +17,6 @@ enum AuditAction: string
     case Payout = 'payout';
     case Refund = 'refund';
     case Reversal = 'reversal';
-    case Reconcile = 'reconcile';
-    case Settle = 'settle';
     case RoleAssign = 'role_assign';
     case RoleRevoke = 'role_revoke';
     case PermissionGrant = 'permission_grant';
@@ -44,8 +42,6 @@ enum AuditAction: string
             self::Payout => 'Payout',
             self::Refund => 'Refund',
             self::Reversal => 'Reversal',
-            self::Reconcile => 'Reconcile',
-            self::Settle => 'Settle',
             self::RoleAssign => 'Role Assigned',
             self::RoleRevoke => 'Role Revoked',
             self::PermissionGrant => 'Permission Granted',
@@ -62,8 +58,8 @@ enum AuditAction: string
         return match ($this) {
             self::Create, self::Update, self::Delete => 'data',
             self::Login, self::Logout, self::LoginFailed => 'auth',
-            self::PlaceBet, self::CancelBet, self::Settle => 'lottery',
-            self::Deposit, self::Withdraw, self::Payout, self::Refund, self::Reversal, self::Reconcile => 'finance',
+            self::PlaceBet, self::CancelBet => 'lottery',
+            self::Deposit, self::Withdraw, self::Payout, self::Refund, self::Reversal => 'finance',
             self::RoleAssign, self::RoleRevoke, self::PermissionGrant, self::PermissionRevoke => 'access',
             self::ConfigChange => 'system',
             self::SecurityAlert => 'security',
