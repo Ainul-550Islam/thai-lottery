@@ -30,7 +30,7 @@ final class ResponsibleGamingController
         /** @var User $user */
         $user = $request->user();
 
-        $limits = $user->responsibleGamingLimits ?? ResponsibleGamingLimit::query()->where('user_id', $user->id)->first();
+        $limits = ResponsibleGamingLimit::query()->where('user_id', $user->id)->first();
 
         return ApiResponse::success(
             data: [

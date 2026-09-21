@@ -34,6 +34,7 @@ final readonly class FinancialReconciliationReport
         public CarbonInterface $executedAt,
         public ?string $initiatedBy = null,
         public array $metadata = [],
+        public float $durationSeconds = 0.0,
     ) {
     }
 

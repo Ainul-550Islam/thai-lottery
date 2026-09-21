@@ -122,8 +122,10 @@ class DisburseWithdrawalJob implements ShouldQueue, ShouldBeUnique
         try {
             return $disbursementService->disburse($withdrawal, $this->options);
         } catch (WithdrawalException $e) {
-            // Already completed is benign idempotency
-            if ($e->getErrorCode() === 'withdrawal_already_completed') {
+            // Already completed is benign idempotency. WithdrawalException (which
+            // extends FinancialException) exposes the code through errorCode();
+            // getErrorCode() never existed and would fatal on this path.
+            if ($e->errorCode() === WithdrawalException::ERROR_ALREADY_COMPLETED) {
                 Log::info('DisburseWithdrawalJob: Caught withdrawal_already_completed, treated as idempotent success', [
                     'withdrawal_id' => $this->withdrawalId,
                 ]);
@@ -134,7 +136,7 @@ class DisburseWithdrawalJob implements ShouldQueue, ShouldBeUnique
             // Permanent business errors should fail immediately without retrying
             Log::error('DisburseWithdrawalJob: Permanent WithdrawalException encountered', [
                 'withdrawal_id' => $this->withdrawalId,
-                'error_code' => $e->getErrorCode(),
+                'error_code' => $e->errorCode(),
                 'message' => $e->getMessage(),
             ]);
 

@@ -77,9 +77,16 @@ return Application::configure(basePath: dirname(__DIR__))
             'wallet.active' => \App\Http\Middleware\EnsureWalletIsActive::class,
             'draw.open' => \App\Http\Middleware\EnsureDrawIsOpen::class,
             'webhook.signature' => \App\Http\Middleware\VerifyWebhookSignature::class,
+            'throttle' => \Illuminate\Routing\Middleware\ThrottleRequests::class,
         ]);
 
+        // Applied globally: security headers, and a correlation id pinned on the way in and
+        // echoed back out on the response so the whole request is traceable. Global append
+        // (rather than web/api group append) is deliberate: the framework's /up health route
+        // carries no middleware group at all, and an operator liveness probe is exactly the
+        // kind of request that must still present security headers and a trace id.
         $middleware->append(\App\Http\Middleware\SecurityHeaders::class);
+        $middleware->append(\App\Http\Middleware\CorrelationIdMiddleware::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         // ---------------------------------------------------------------------

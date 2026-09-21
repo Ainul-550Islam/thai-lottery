@@ -110,7 +110,7 @@ final class ResponsibleGamingService
         // Sum completed & pending deposits in last 24 hours
         $todayDeposits = Deposit::query()
             ->where('user_id', $user->id)
-            ->whereIn('status', [DepositStatus::Completed, DepositStatus::Pending])
+            ->whereIn('status', [DepositStatus::completedCase(), DepositStatus::Pending])
             ->where('created_at', '>=', now()->subDay())
             ->sum('amount');
 

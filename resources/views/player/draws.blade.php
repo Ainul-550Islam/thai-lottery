@@ -68,7 +68,7 @@
                     @endif
                 </div>
 
-                <a href="{{ route('player.draw-detail', $draw->id) }}" class="block w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs rounded-xl text-center transition">
+                <a href="{{ route('player.draws.detail', $draw->id) }}" class="block w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs rounded-xl text-center transition">
                     View Draw Breakdown &rarr;
                 </a>
             </div>

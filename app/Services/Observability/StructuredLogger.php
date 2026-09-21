@@ -34,6 +34,7 @@ class StructuredLogger
         'webhook_secret',
         'payout_details',
         'card_number',
+        'card_no',
         'cvv',
         'pin',
         'bank_account',

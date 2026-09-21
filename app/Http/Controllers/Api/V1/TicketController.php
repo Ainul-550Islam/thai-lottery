@@ -35,6 +35,42 @@ use Illuminate\Support\Facades\Gate;
  */
 final class TicketController
 {
+    /**
+     * List the authenticated player's own tickets, paginated.
+     *
+     * The query is scoped to the caller's user_id before anything else, so the endpoint
+     * can never surface another player's ticket receipt.
+     */
+    public function index(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        if ($user === null) {
+            return $this->notFound();
+        }
+
+        $perPage = min(max((int) $request->query('per_page', 15), 1), 50);
+
+        $tickets = Ticket::query()
+            ->where('user_id', $user->getAuthIdentifier())
+            ->with(['bets'])
+            ->latest('id')
+            ->paginate($perPage);
+
+        return ApiResponse::success(
+            data: [
+                'items' => TicketResource::collection($tickets->items()),
+                'pagination' => [
+                    'current_page' => $tickets->currentPage(),
+                    'last_page' => $tickets->lastPage(),
+                    'per_page' => $tickets->perPage(),
+                    'total' => $tickets->total(),
+                ],
+            ],
+            message: 'Tickets retrieved successfully.',
+        );
+    }
+
     public function show(Request $request, string $ticket): JsonResponse
     {
         $user = $request->user();

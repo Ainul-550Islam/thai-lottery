@@ -45,6 +45,43 @@ use Illuminate\Support\Facades\Gate;
  */
 final class BetController
 {
+    /**
+     * List the authenticated player's own bets, paginated.
+     *
+     * The query is scoped to the caller's user_id before anything else, so the endpoint
+     * can never surface another player's wager. Pagination shape matches the draw list:
+     * `data.items` plus `data.pagination`.
+     */
+    public function index(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        if ($user === null) {
+            return $this->notFound();
+        }
+
+        $perPage = min(max((int) $request->query('per_page', 15), 1), 50);
+
+        $bets = Bet::query()
+            ->where('user_id', $user->getAuthIdentifier())
+            ->with(['draw', 'items'])
+            ->latest('id')
+            ->paginate($perPage);
+
+        return ApiResponse::success(
+            data: [
+                'items' => BetResource::collection($bets->items()),
+                'pagination' => [
+                    'current_page' => $bets->currentPage(),
+                    'last_page' => $bets->lastPage(),
+                    'per_page' => $bets->perPage(),
+                    'total' => $bets->total(),
+                ],
+            ],
+            message: 'Bets retrieved successfully.',
+        );
+    }
+
     public function show(Request $request, string $bet): JsonResponse
     {
         $model = $this->resolve($request, $bet);

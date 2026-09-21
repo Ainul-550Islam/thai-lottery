@@ -65,6 +65,64 @@ class AppServiceProvider extends ServiceProvider
 
         $apiPerMinute = (int) config('security.rate_limits.api.max_per_minute', 60);
         $betPerMinute = (int) config('security.rate_limits.bet.max_per_minute', 10);
+        $webhookPerMinute = (int) config('security.rate_limits.webhook.max_per_minute', 120);
+        $depositPerHour = (int) config('security.rate_limits.deposit.max_per_hour', 5);
+        $withdrawalPerDay = (int) config('security.rate_limits.withdrawal.max_per_day', 3);
+
+        // Money-entry ceilings, keyed on the authenticated user exactly as
+        // config('security.rate_limits.deposit.by') / withdrawal.by declare. Deposits and
+        // withdrawals are the two write surfaces where a per-hour / per-day ceiling matters
+        // beyond the per-minute api limiter, so both are registered here even though only
+        // the deposit route carries the deposit limiter today.
+        // The key passed to ->by() is suffixed with the limiter name by the throttle
+        // middleware, so ->by('user:1') yields the cache key 'deposit:user:1' — the exact
+        // key that hardening consumers clear with RateLimiter::clear('deposit:user:N').
+        RateLimiter::for('deposit', function (Request $request) use ($depositPerHour): Limit {
+            $identifier = $request->user()?->getAuthIdentifier();
+
+            return Limit::perHour($depositPerHour)
+                ->by($identifier === null ? 'ip:'.$request->ip() : 'user:'.$identifier)
+                ->response($this->throttleResponse());
+        });
+
+        RateLimiter::for('withdrawal', function (Request $request) use ($withdrawalPerDay): Limit {
+            $identifier = $request->user()?->getAuthIdentifier();
+
+            return Limit::perDay($withdrawalPerDay)
+                ->by($identifier === null ? 'ip:'.$request->ip() : 'user:'.$identifier)
+                ->response($this->throttleResponse());
+        });
+
+        // Two further named limiters that hardening consumers reference by name:
+        // 'player-bet-placement' is the tighter per-minute ceiling for the wager write
+        // surface, and 'financial-critical' guards every endpoint that can move money.
+        // Both key on the authenticated user, falling back to the IP for unauthenticated
+        // traffic so a hostile host cannot exhaust a real user's allowance.
+        RateLimiter::for('player-bet-placement', function (Request $request) use ($betPerMinute): Limit {
+            $identifier = $request->user()?->getAuthIdentifier();
+
+            return Limit::perMinute($betPerMinute)
+                ->by($identifier === null ? 'bet:ip:'.$request->ip() : 'bet:user:'.$identifier)
+                ->response($this->throttleResponse());
+        });
+
+        RateLimiter::for('financial-critical', function (Request $request): Limit {
+            $identifier = $request->user()?->getAuthIdentifier();
+
+            return Limit::perMinute(30)
+                ->by($identifier === null ? 'financial-critical:ip:'.$request->ip() : 'financial-critical:user:'.$identifier)
+                ->response($this->throttleResponse());
+        });
+
+        // 'player-api' mirrors the broad per-minute API ceiling; registered under its own
+        // name so the hardening surface can reference it independently of 'api'.
+        RateLimiter::for('player-api', function (Request $request) use ($apiPerMinute): Limit {
+            $identifier = $request->user()?->getAuthIdentifier();
+
+            return Limit::perMinute($apiPerMinute)
+                ->by($identifier === null ? 'ip:'.$request->ip() : 'user:'.$identifier)
+                ->response($this->throttleResponse());
+        });
 
         RateLimiter::for('api', function (Request $request) use ($apiPerMinute): Limit {
             $identifier = $request->user()?->getAuthIdentifier();
@@ -90,7 +148,18 @@ class AppServiceProvider extends ServiceProvider
             }
 
             return Limit::perMinute($betPerMinute)
-                ->by('bet:user:'.$identifier)
+                    ->by('bet:user:'.$identifier)
+                    ->response($this->throttleResponse());
+        });
+
+        // The webhook limiter is keyed on the IP, exactly as
+        // config('security.rate_limits.webhook.by') declares. Incoming gateway
+        // notifications are unauthenticated by nature of being server-to-server
+        // callbacks; the IP is the only key that can pin a hostile host without
+        // punishing legitimately high-volume providers.
+        RateLimiter::for('webhook', function (Request $request) use ($webhookPerMinute): Limit {
+            return Limit::perMinute($webhookPerMinute)
+                ->by('ip:'.$request->ip())
                 ->response($this->throttleResponse());
         });
     }
