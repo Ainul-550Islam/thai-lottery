@@ -70,6 +70,16 @@ class Agent extends Model
         return $this->status === AgentStatus::Active;
     }
 
+    /**
+     * Whether this agent may take on new referred players right now. Mirrors
+     * the status ladder's own rule: only a fully Active agent can absorb new
+     * referrals; Inactive/Suspended/Terminated agents are closed for intake.
+     */
+    public function canAcceptPlayers(): bool
+    {
+        return $this->status->canAcceptPlayers();
+    }
+
     public function canEarnCommission(): bool
     {
         return $this->status->canOperate();

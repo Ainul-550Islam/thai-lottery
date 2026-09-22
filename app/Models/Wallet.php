@@ -7,6 +7,7 @@ namespace App\Models;
 use App\Enums\Currency;
 use App\Enums\WalletStatus;
 use App\Enums\WalletType;
+use Database\Factories\WalletFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -14,6 +15,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
 
 /**
  * User wallet.
@@ -39,14 +41,15 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property string $total_wagered
  * @property string $total_won
  * @property int $version
- * @property \Illuminate\Support\Carbon|null $locked_at
+ * @property Carbon|null $locked_at
  * @property string|null $locked_reason
  * @property-read string $available_balance
  */
 class Wallet extends Model
 {
-    /** @use HasFactory<\Database\Factories\WalletFactory> */
+    /** @use HasFactory<WalletFactory> */
     use HasFactory;
+
     use SoftDeletes;
 
     /**

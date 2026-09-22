@@ -6,10 +6,12 @@ namespace App\Models;
 
 use App\Enums\BetType;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
 
 /**
  * An officially published winning number of a draw.
@@ -31,13 +33,14 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property int $payout_multiplier
  * @property int $total_winners
  * @property string $total_payout
- * @property \Illuminate\Support\Carbon|null $published_at
+ * @property Carbon|null $published_at
  * @property array<string, mixed>|null $metadata
  */
 class WinningNumber extends Model
 {
-    /** @use HasFactory<\Illuminate\Database\Eloquent\Factories\Factory> */
+    /** @use HasFactory<Factory> */
     use HasFactory;
+
     use SoftDeletes;
 
     /**

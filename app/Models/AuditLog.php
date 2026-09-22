@@ -6,11 +6,14 @@ namespace App\Models;
 
 use App\Enums\AuditAction;
 use App\Enums\RiskLevel;
+use App\Services\Observability\CorrelationContext;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Support\Carbon;
 
 /**
  * Append-only record of a security-sensitive or money-sensitive action.
@@ -40,11 +43,11 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property string|null $method
  * @property string|null $request_id
  * @property array<string, mixed>|null $metadata
- * @property \Illuminate\Support\Carbon|null $created_at
+ * @property Carbon|null $created_at
  */
 class AuditLog extends Model
 {
-    /** @use HasFactory<\Illuminate\Database\Eloquent\Factories\Factory> */
+    /** @use HasFactory<Factory> */
     use HasFactory;
 
     /**
@@ -89,6 +92,84 @@ class AuditLog extends Model
             'metadata' => 'array',
             'created_at' => 'datetime',
         ];
+    }
+
+    /**
+     * Enforce the two append-time guarantees the redaction/correlation policy
+     * asks of EVERY audit row, no matter which code path writes it:
+     *
+     * 1. CORRELATION — a row written without an explicit request_id inherits
+     *    the correlation id of the current execution context (HTTP request,
+     *    queued job, scheduler run) so a whole action chain is traceable.
+     * 2. SCRUBBING — old_values, new_values and metadata are stripped of every
+     *    key named in config('security.audit.sensitive_fields') (recursive,
+     *    replaced with the configured placeholder) before the row reaches the
+     *    database. Writers may also scrub upstream; this is the last line.
+     */
+    protected static function booted(): void
+    {
+        static::creating(static function (self $auditLog): void {
+            if ($auditLog->request_id === null || $auditLog->request_id === '') {
+                $auditLog->request_id = CorrelationContext::get();
+            }
+
+            $auditLog->old_values = self::scrubSensitivePayload($auditLog->old_values);
+            $auditLog->new_values = self::scrubSensitivePayload($auditLog->new_values);
+            $auditLog->metadata = self::scrubSensitivePayload($auditLog->metadata);
+        });
+    }
+
+    /**
+     * Recursively redact sensitive keys from a payload. A key is sensitive
+     * when its normalized form (lowercase, '-' and ' ' folded to '_') either
+     * equals or CONTAINS a configured sensitive field name — this rejects
+     * obfuscations like 'card_number_encrypted' while leaving innocent keys
+     * such as 'client_ip' untouched.
+     *
+     * @param  array<string, mixed>|null  $payload
+     * @return array<string, mixed>|null
+     */
+    private static function scrubSensitivePayload(?array $payload): ?array
+    {
+        if ($payload === null || $payload === []) {
+            return $payload;
+        }
+
+        /** @var list<string> $sensitive */
+        $sensitive = (array) config('security.audit.sensitive_fields', []);
+        $sensitive = array_map(
+            static fn (mixed $field): string => strtolower((string) $field),
+            $sensitive,
+        );
+
+        $placeholder = (string) config('security.audit.redaction_placeholder', '[REDACTED]');
+
+        $scrubbed = [];
+
+        foreach ($payload as $key => $value) {
+            $normalized = strtolower(str_replace(['-', ' '], '_', (string) $key));
+
+            $sensitiveHit = false;
+
+            foreach ($sensitive as $field) {
+                if ($field !== '' && ($normalized === $field || str_contains($normalized, $field))) {
+                    $sensitiveHit = true;
+
+                    break;
+                }
+            }
+
+            if ($sensitiveHit) {
+                $scrubbed[$key] = $placeholder;
+            } elseif (is_array($value)) {
+                /** @var array<string, mixed> $value */
+                $scrubbed[$key] = self::scrubSensitivePayload($value);
+            } else {
+                $scrubbed[$key] = $value;
+            }
+        }
+
+        return $scrubbed;
     }
 
     /**

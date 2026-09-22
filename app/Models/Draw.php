@@ -6,12 +6,14 @@ namespace App\Models;
 
 use App\Enums\DrawStatus;
 use App\Enums\DrawType;
+use Database\Factories\DrawFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
 
 /**
  * A single lottery draw.
@@ -28,11 +30,11 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property string $draw_number
  * @property DrawType $type
  * @property DrawStatus $status
- * @property \Illuminate\Support\Carbon $scheduled_at
- * @property \Illuminate\Support\Carbon|null $opened_at
- * @property \Illuminate\Support\Carbon|null $closed_at
- * @property \Illuminate\Support\Carbon|null $drawn_at
- * @property \Illuminate\Support\Carbon|null $completed_at
+ * @property Carbon $scheduled_at
+ * @property Carbon|null $opened_at
+ * @property Carbon|null $closed_at
+ * @property Carbon|null $drawn_at
+ * @property Carbon|null $completed_at
  * @property int $total_bets
  * @property string $total_amount_wagered
  * @property string $total_payout
@@ -45,8 +47,9 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class Draw extends Model
 {
-    /** @use HasFactory<\Database\Factories\DrawFactory> */
+    /** @use HasFactory<DrawFactory> */
     use HasFactory;
+
     use SoftDeletes;
 
     /**

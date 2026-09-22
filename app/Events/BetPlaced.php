@@ -22,8 +22,7 @@ final class BetPlaced implements ShouldBroadcast
 
     public function __construct(
         public readonly Bet $bet,
-    ) {
-    }
+    ) {}
 
     /**
      * @return array<int, PrivateChannel>

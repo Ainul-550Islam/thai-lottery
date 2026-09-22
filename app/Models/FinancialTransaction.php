@@ -9,12 +9,14 @@ use App\Enums\TransactionStatus;
 use App\Enums\TransactionType;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
 
 /**
  * Financial transaction aggregate.
@@ -43,14 +45,15 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property string|null $reference_type
  * @property int|null $reference_id
  * @property int|null $reversed_by
- * @property \Illuminate\Support\Carbon|null $reversed_at
- * @property \Illuminate\Support\Carbon|null $processed_at
+ * @property Carbon|null $reversed_at
+ * @property Carbon|null $processed_at
  * @property-read string $net_amount
  */
 class FinancialTransaction extends Model
 {
-    /** @use HasFactory<\Illuminate\Database\Eloquent\Factories\Factory> */
+    /** @use HasFactory<Factory> */
     use HasFactory;
+
     use SoftDeletes;
 
     /**

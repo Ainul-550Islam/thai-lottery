@@ -20,7 +20,6 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
@@ -33,7 +32,7 @@ use Throwable;
  * 3. Immutable Execution Audit: Automatically logs report metadata to audit_logs without secrets.
  * 4. Automated Anomaly Escalation: Dispatches critical anomaly alerts to the notification queue.
  */
-class ProcessFinancialReconciliationJob implements ShouldQueue, ShouldBeUnique
+class ProcessFinancialReconciliationJob implements ShouldBeUnique, ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
@@ -135,7 +134,7 @@ class ProcessFinancialReconciliationJob implements ShouldQueue, ShouldBeUnique
             'error' => $exception->getMessage(),
         ]);
 
-        $log = new AuditLog();
+        $log = new AuditLog;
         $log->fill([
             'user_id' => null,
             'action' => AuditAction::Reconcile,

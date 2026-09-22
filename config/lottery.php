@@ -366,6 +366,43 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Prize Claims
+    |--------------------------------------------------------------------------
+    |
+    | window_days: how long a prize remains claimable after its draw (GLO
+    | parity: 2 years ≈ 730 days). review_threshold: prizes BELOW this are
+    | auto-approved on claim; at-or-above goes to the four-eyes review queue.
+    | Default '999999999.00' auto-approves effectively everything digital
+    | unless operations chooses to start reviewing floors.
+    |
+    */
+
+    'claims' => [
+        'window_days' => (int) env('LOTTERY_CLAIM_WINDOW_DAYS', 730),
+        'review_threshold' => (string) env('LOTTERY_CLAIM_REVIEW_THRESHOLD', '999999999.00'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Prize Taxation
+    |--------------------------------------------------------------------------
+    |
+    | Exact-decimal prize tax. 'rate' is a decimal string in [0,1] with at
+    | most 6 places (5.5% = "0.055"); absent configuration is a loud stop,
+    | never a guessed zero. 'threshold' waives tax for taxable bases at or
+    | below it — a prize under the threshold carries an audited zero, not
+    | a silent one. Per-currency overrides map currency codes to rates.
+    |
+    */
+
+    'tax' => [
+        'rate' => (string) env('LOTTERY_TAX_RATE', '0'),
+        'threshold' => (string) env('LOTTERY_TAX_THRESHOLD', '0.00'),
+        'currencies' => [],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Result Publication
     |--------------------------------------------------------------------------
     */
@@ -385,6 +422,89 @@ return [
         'bottom_two_metadata_key' => 'bottom_two',
         'first_prize_digits' => 6,
         'publish_delay_minutes' => 0,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Bet Cancellation
+    |--------------------------------------------------------------------------
+    |
+    | Player-initiated cancellation. A cancellation always refunds the FULL
+    | stored stake through FinancialTransactionService (BetRefund) inside the
+    | same transaction that marks the bet cancelled and releases the risk
+    | reservation — a cancelled-and-unrefunded bet is unrepresentable.
+    |
+    */
+
+    'cancellation' => [
+        'enabled' => (bool) env('LOTTERY_CANCELLATION_ENABLED', true),
+        // Minutes from placement during which a player may still cancel.
+        // 0 means "no time limit while the draw is open".
+        'window_minutes' => (int) env('LOTTERY_CANCELLATION_WINDOW_MINUTES', 60),
+        // Cancellation stops exactly when selling stops.
+        'require_draw_open' => (bool) env('LOTTERY_CANCELLATION_REQUIRE_OPEN_DRAW', true),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Bet Amendment
+    |--------------------------------------------------------------------------
+    |
+    | Replace a bet's number and/or stake. Mechanically a full-refund
+    | cancellation followed by an ordinary purchase through BetPurchaseService,
+    | ordered so the player's stake is back in the wallet BEFORE the
+    | replacement is attempted — a refused replacement never strands money.
+    |
+    */
+
+    'amendment' => [
+        'enabled' => (bool) env('LOTTERY_AMENDMENT_ENABLED', true),
+        'window_minutes' => (int) env('LOTTERY_AMENDMENT_WINDOW_MINUTES', 60),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Bulk Purchase (bet slip)
+    |--------------------------------------------------------------------------
+    |
+    | Multi-selection purchasing as N sequential atomic purchases through the
+    | single-bet pipeline. Partial success is reported per item, never hidden.
+    |
+    */
+
+    'bulk' => [
+        'max_items' => 50,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Ticket Sharing
+    |--------------------------------------------------------------------------
+    |
+    | Revocable bearer links exposing a ticket's coarse summary. The raw token
+    | is 256-bit, returned once at creation; only its SHA-256 is stored.
+    |
+    */
+
+    'sharing' => [
+        'enabled' => (bool) env('LOTTERY_SHARING_ENABLED', true),
+        'ttl_hours' => (int) env('LOTTERY_SHARE_TTL_HOURS', 72),
+        'min_ttl_hours' => 1,
+        'max_ttl_hours' => 720,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Ticket Verification
+    |--------------------------------------------------------------------------
+    |
+    | Read-only "does this ticket number exist and in what broad state". Public
+    | verdicts are coarse by design; money detail is owner-scoped only.
+    |
+    */
+
+    'verification' => [
+        'enabled' => (bool) env('LOTTERY_VERIFICATION_ENABLED', true),
     ],
 
     /*

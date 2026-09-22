@@ -8,12 +8,14 @@ use App\Enums\BetStatus;
 use App\Enums\BetType;
 use App\Enums\Currency;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
 
 /**
  * Betting aggregate: one bet of one type placed by one user on one draw.
@@ -39,16 +41,17 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property string $actual_payout
  * @property int $total_numbers
  * @property string|null $idempotency_key
- * @property \Illuminate\Support\Carbon|null $placed_at
- * @property \Illuminate\Support\Carbon|null $won_at
- * @property \Illuminate\Support\Carbon|null $cancelled_at
+ * @property Carbon|null $placed_at
+ * @property Carbon|null $won_at
+ * @property Carbon|null $cancelled_at
  * @property string|null $cancelled_reason
  * @property array<string, mixed>|null $metadata
  */
 class Bet extends Model
 {
-    /** @use HasFactory<\Illuminate\Database\Eloquent\Factories\Factory> */
+    /** @use HasFactory<Factory> */
     use HasFactory;
+
     use SoftDeletes;
 
     /**

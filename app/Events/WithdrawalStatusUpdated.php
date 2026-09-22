@@ -22,8 +22,7 @@ final class WithdrawalStatusUpdated implements ShouldBroadcast
 
     public function __construct(
         public readonly Withdrawal $withdrawal,
-    ) {
-    }
+    ) {}
 
     /**
      * @return array<int, PrivateChannel>

@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
 
 /**
  * Player Responsible Gaming Limits and Exclusion Controls.
@@ -17,8 +18,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property string|null $daily_deposit_limit
  * @property string|null $single_bet_limit
  * @property string|null $daily_wagering_limit
- * @property \Illuminate\Support\Carbon|null $self_excluded_until
- * @property \Illuminate\Support\Carbon|null $cool_off_until
+ * @property Carbon|null $self_excluded_until
+ * @property Carbon|null $cool_off_until
  * @property string|null $self_exclusion_reason
  * @property array<string, mixed>|null $metadata
  */

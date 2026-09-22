@@ -11,7 +11,9 @@ use App\Exceptions\BetPurchaseException;
 use App\Exceptions\BetPurchaseIdempotencyException;
 use App\Exceptions\BetPurchaseValidationException;
 use App\Models\Bet;
+use App\Models\User;
 use App\Services\Finance\Money;
+use App\Services\ResponsibleGaming\ResponsibleGamingEnforcementService;
 
 /**
  * The one public entry point for buying a bet.
@@ -68,8 +70,7 @@ final class BetPurchaseService
         private readonly BetPurchaseValidator $validator,
         private readonly BetPurchaseTransactionService $transaction,
         private readonly BetPurchaseIdempotencyService $idempotency,
-    ) {
-    }
+    ) {}
 
     /**
      * Buy a bet.
@@ -100,6 +101,12 @@ final class BetPurchaseService
         if ($replay instanceof Bet) {
             return $this->idempotency->replayResultFor($replay);
         }
+
+        // RESPONSIBLE GAMING (batch-14): the single fail-closed facade,
+        // consumed here before any validation or money movement — the
+        // desk's named refusals (SE_ACTIVE_EXCLUSION, RGL_*) surface
+        // to the caller unchanged; replays above already returned free.
+        $this->assertPlayerMayStake($data);
 
         $context = $this->validator->validate($data);
 
@@ -159,6 +166,22 @@ final class BetPurchaseService
      *
      * @throws BetPurchaseConcurrencyException when the winner cannot be read back
      */
+    /**
+     * Responsible-gaming enforcement: exclusion blocks play; ceilings
+     * (per-act stake + rolling loss) refuse with named codes. The
+     * facade NEVER implements money logic — it reads evidence alone.
+     */
+    private function assertPlayerMayStake(BetPurchaseData $data): void
+    {
+        /** @var User|null $player */
+        $player = User::query()->find($data->userId);
+
+        if ($player instanceof User) {
+            app(ResponsibleGamingEnforcementService::class)
+                ->assertBetAllowed($player, $data->rawStake);
+        }
+    }
+
     private function replayAfterLostRace(
         string $idempotencyKey,
         BetPurchaseData $data,

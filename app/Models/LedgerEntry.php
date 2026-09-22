@@ -8,11 +8,13 @@ use App\Enums\Currency;
 use App\Enums\LedgerEntryType;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
 
 /**
  * A single line of the double-entry ledger.
@@ -39,14 +41,15 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property string|null $reference_type
  * @property int|null $reference_id
  * @property array<string, mixed>|null $metadata
- * @property \Illuminate\Support\Carbon|null $posted_at
+ * @property Carbon|null $posted_at
  * @property-read string $debit
  * @property-read string $credit
  */
 class LedgerEntry extends Model
 {
-    /** @use HasFactory<\Illuminate\Database\Eloquent\Factories\Factory> */
+    /** @use HasFactory<Factory> */
     use HasFactory;
+
     use SoftDeletes;
 
     /**

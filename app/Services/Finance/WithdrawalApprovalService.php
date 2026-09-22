@@ -66,6 +66,7 @@ final class WithdrawalApprovalService
         private readonly WalletLockService $locks,
         private readonly WalletHoldService $holds,
         private readonly FinancialStateTransitionService $transitions,
+        private readonly \App\Services\Withdrawal\WithdrawalKycGateService $kycGate,
     ) {}
 
     /**
@@ -79,6 +80,19 @@ final class WithdrawalApprovalService
      */
     public function approve(Withdrawal $withdrawal, ?int $reviewerUserId = null, ?string $note = null): array
     {
+        // MONEY-OUT KYC GATE, BEFORE THE BOUNDARY OPENS: identity certification
+        // must happen before any fund is reserved. The gate runs under its own
+        // transaction (it can legally never open inside ours), detains the
+        // withdrawal into KycRequired when evidence is inadmissible, and lifts a
+        // previous detention back to Pending when valid evidence lands — the
+        // canApprove() lane below then reads a clean state either way.
+        $current = $withdrawal->fresh() ?? $withdrawal;
+
+        if ($current instanceof Withdrawal && $this->kycGate->requiresGate($current)) {
+            $this->kycGate->gate($current);
+            $withdrawal = $current;
+        }
+
         return $this->withinTransaction(function () use ($withdrawal, $reviewerUserId, $note): array {
             // 1. WALLET lock first, always.
             $wallet = $this->locks->lock((int) $withdrawal->wallet_id);
@@ -204,6 +218,27 @@ final class WithdrawalApprovalService
      */
     public function markProcessing(Withdrawal $withdrawal): Withdrawal
     {
+        // CLIFF-EDGE KYC RECHECK, BEFORE THE IRREVERSIBLE FLIP: the approval
+        // gesture and this moment can be seconds (or a queue delay) apart, and
+        // identity evidence can expire in between. The VerifyWithdrawalKycJob's
+        // verdict is the integration contract: a detention aborts processing
+        // HERE — the gate already moved the withdrawal to KycRequired, and the
+        // reservation back-off is the operator's explicit next act, so no money
+        // quietly slips out under stale identity.
+        $preCheck = $withdrawal->fresh() ?? $withdrawal;
+
+        if ($preCheck instanceof Withdrawal && $this->kycGate->requiresGate($preCheck)) {
+            $job = new \App\Jobs\VerifyWithdrawalKycJob((int) $preCheck->getKey());
+            $verdict = $job->handle($this->kycGate);
+
+            if (($verdict['detention'] ?? false) === true) {
+                throw WithdrawalException::notCompletable(
+                    (int) $preCheck->getKey(),
+                    WithdrawalStatus::KycRequired,
+                );
+            }
+        }
+
         return $this->withinTransaction(function () use ($withdrawal): Withdrawal {
             $wallet = $this->locks->lock((int) $withdrawal->wallet_id);
             $current = $this->transitions->lockWithdrawal($withdrawal);

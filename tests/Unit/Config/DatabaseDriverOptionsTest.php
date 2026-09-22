@@ -60,9 +60,9 @@ final class DatabaseDriverOptionsTest extends TestCase
         }
 
         $this->assertSame(
-            1008,
-            \Pdo\Mysql::ATTR_SSL_CA,
-            'Pdo\\Mysql::ATTR_SSL_CA must remain attribute id 1008.',
+            (int) constant('PDO::MYSQL_ATTR_SSL_CA'),
+            (int) constant(\Pdo\Mysql::class.'::ATTR_SSL_CA'),
+            'Both spellings must resolve to the identical PDO attribute id on every PHP build.',
         );
     }
 
@@ -80,9 +80,23 @@ final class DatabaseDriverOptionsTest extends TestCase
 
         $this->assertIsArray($options);
 
+        // On a build where the mysql PDO driver is not loaded at all (no
+        // Pdo\Mysql class, no PDO::MYSQL_ATTR_SSL_CA constant) there IS no
+        // valid attribute id to pin and the project's options list is
+        // legitimately []; skip honestly instead of throwing on constant().
+        if (! defined('PDO::MYSQL_ATTR_SSL_CA') && ! class_exists(\Pdo\Mysql::class)) {
+            $this->markTestSkipped(
+                'The mysql PDO driver is not available on this build, so there is no SSL CA attribute id to assert against.'
+            );
+        }
+
+        $sslCaAttributeId = (int) constant(
+            class_exists(\Pdo\Mysql::class) ? \Pdo\Mysql::class.'::ATTR_SSL_CA' : 'PDO::MYSQL_ATTR_SSL_CA',
+        );
+
         foreach (array_keys($options) as $key) {
             $this->assertSame(
-                1008,
+                $sslCaAttributeId,
                 $key,
                 'The only option this project sets on the mysql connection is the SSL CA path.',
             );

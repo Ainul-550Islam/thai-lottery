@@ -8,12 +8,14 @@ use App\Enums\Currency;
 use App\Enums\PaymentMethod;
 use App\Enums\WithdrawalStatus;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
 
 /**
  * A request to take money out of a wallet.
@@ -43,18 +45,19 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property string $net_amount
  * @property array<string, mixed>|null $payout_details
  * @property int|null $reviewed_by
- * @property \Illuminate\Support\Carbon|null $requested_at
- * @property \Illuminate\Support\Carbon|null $reviewed_at
- * @property \Illuminate\Support\Carbon|null $approved_at
- * @property \Illuminate\Support\Carbon|null $completed_at
- * @property \Illuminate\Support\Carbon|null $rejected_at
+ * @property Carbon|null $requested_at
+ * @property Carbon|null $reviewed_at
+ * @property Carbon|null $approved_at
+ * @property Carbon|null $completed_at
+ * @property Carbon|null $rejected_at
  * @property string|null $rejection_reason
  * @property array<string, mixed>|null $metadata
  */
 class Withdrawal extends Model
 {
-    /** @use HasFactory<\Illuminate\Database\Eloquent\Factories\Factory> */
+    /** @use HasFactory<Factory> */
     use HasFactory;
+
     use SoftDeletes;
 
     /**

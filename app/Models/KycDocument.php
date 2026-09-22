@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
 
 /**
  * KYC Verification Document Model.
@@ -25,7 +26,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property int $file_size
  * @property KycStatus $status
  * @property string|null $rejection_reason
- * @property \Illuminate\Support\Carbon|null $verified_at
+ * @property Carbon|null $verified_at
  * @property int|null $verified_by
  * @property array<string, mixed>|null $metadata
  */
@@ -47,6 +48,11 @@ class KycDocument extends Model
         'verified_at',
         'verified_by',
         'metadata',
+        // Batch-13 authoritative lane (additive columns).
+        'issuer_country',
+        'document_fingerprint',
+        'verification_reference',
+        'expires_at',
     ];
 
     /**
@@ -59,6 +65,7 @@ class KycDocument extends Model
             'status' => KycStatus::class,
             'file_size' => 'integer',
             'verified_at' => 'datetime',
+            'expires_at' => 'datetime',
             'metadata' => 'array',
         ];
     }

@@ -197,6 +197,19 @@ return [
         'fee_percentage' => '0.00',
         'require_manual_approval' => true,
         'daily_request_limit' => 3,
+
+        /*
+        |------------------------------------------------------------------|
+        | KYC Gate                                                         |
+        |------------------------------------------------------------------|
+        | Withdrawals at or above kyc_gate_threshold require the player's  |
+        | aggregate KYC standing to be Verified at request time. Below the |
+        | threshold small withdrawals flow without a verified document.    |
+        | Default 5000.00 (≈฿5k/≈$150) is the standard e-money floor.      |
+        |------------------------------------------------------------------|
+        */
+        'kyc_gate_enabled' => (bool) env('FINANCE_WITHDRAWAL_KYC_GATE_ENABLED', true),
+        'kyc_gate_threshold' => (string) env('FINANCE_WITHDRAWAL_KYC_GATE_THRESHOLD', '5000.00'),
     ],
 
     /*

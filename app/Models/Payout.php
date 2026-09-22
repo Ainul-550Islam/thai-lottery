@@ -7,11 +7,13 @@ namespace App\Models;
 use App\Enums\Currency;
 use App\Enums\PayoutStatus;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
 
 /**
  * A prize payment owed to a user for a winning bet in a draw.
@@ -33,15 +35,16 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property string $amount
  * @property string|null $multiplier
  * @property int|null $ticket_id
- * @property \Illuminate\Support\Carbon|null $processed_at
- * @property \Illuminate\Support\Carbon|null $failed_at
+ * @property Carbon|null $processed_at
+ * @property Carbon|null $failed_at
  * @property string|null $failure_reason
  * @property array<string, mixed>|null $metadata
  */
 class Payout extends Model
 {
-    /** @use HasFactory<\Illuminate\Database\Eloquent\Factories\Factory> */
+    /** @use HasFactory<Factory> */
     use HasFactory;
+
     use SoftDeletes;
 
     /**

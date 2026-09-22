@@ -7,12 +7,14 @@ namespace App\Models;
 use App\Enums\Currency;
 use App\Enums\TicketStatus;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
 
 /**
  * A finalized betting ticket: the receipt that groups the bets a user submitted
@@ -33,16 +35,17 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property string $total_amount
  * @property int $total_bets
  * @property int $total_numbers
- * @property \Illuminate\Support\Carbon|null $issued_at
- * @property \Illuminate\Support\Carbon|null $confirmed_at
- * @property \Illuminate\Support\Carbon|null $cancelled_at
- * @property \Illuminate\Support\Carbon|null $expired_at
+ * @property Carbon|null $issued_at
+ * @property Carbon|null $confirmed_at
+ * @property Carbon|null $cancelled_at
+ * @property Carbon|null $expired_at
  * @property array<string, mixed>|null $metadata
  */
 class Ticket extends Model
 {
-    /** @use HasFactory<\Illuminate\Database\Eloquent\Factories\Factory> */
+    /** @use HasFactory<Factory> */
     use HasFactory;
+
     use SoftDeletes;
 
     /**

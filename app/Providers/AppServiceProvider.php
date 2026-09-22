@@ -148,8 +148,8 @@ class AppServiceProvider extends ServiceProvider
             }
 
             return Limit::perMinute($betPerMinute)
-                    ->by('bet:user:'.$identifier)
-                    ->response($this->throttleResponse());
+                ->by('bet:user:'.$identifier)
+                ->response($this->throttleResponse());
         });
 
         // The webhook limiter is keyed on the IP, exactly as

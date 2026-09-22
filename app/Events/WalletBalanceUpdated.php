@@ -23,8 +23,7 @@ final class WalletBalanceUpdated implements ShouldBroadcast
     public function __construct(
         public readonly Wallet $wallet,
         public readonly ?string $reason = null,
-    ) {
-    }
+    ) {}
 
     /**
      * @return array<int, PrivateChannel>

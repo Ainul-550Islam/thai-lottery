@@ -95,11 +95,7 @@ final class ResponsibleGamingService
      */
     public function assertDepositAllowed(User $user, string $amount): void
     {
-        $limits = $user->responsibleGamingLimits;
-
-        if ($limits instanceof \Illuminate\Support\Collection || $limits instanceof \Illuminate\Database\Eloquent\Collection) {
-            $limits = $limits->first();
-        }
+        $limits = $user->responsibleGamingLimit;
 
         if ($limits === null || $limits->daily_deposit_limit === null) {
             return;
@@ -135,11 +131,7 @@ final class ResponsibleGamingService
             throw new InvalidArgumentException('Account is currently in self-exclusion or cool-off period.');
         }
 
-        $limits = $user->responsibleGamingLimits;
-
-        if ($limits instanceof \Illuminate\Support\Collection || $limits instanceof \Illuminate\Database\Eloquent\Collection) {
-            $limits = $limits->first();
-        }
+        $limits = $user->responsibleGamingLimit;
 
         if ($limits === null) {
             return;

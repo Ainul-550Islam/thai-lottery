@@ -4,12 +4,16 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\DTOs\Security\AuthenticationAttemptData;
+use App\Enums\AuthenticationMethod;
 use App\Enums\UserStatus;
+use App\Exceptions\AuthenticationSecurityException;
 use App\Http\Requests\Api\V1\LoginRequest;
 use App\Http\Responses\ApiResponse;
 use App\Http\Support\AuthAuditRecorder;
 use App\Http\Support\BetPurchaseErrorMapper;
 use App\Models\User;
+use App\Services\Security\AuthenticationSecurityService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -50,6 +54,29 @@ final class AuthController
     {
         $identifier = $request->loginValue();
 
+        // BATCH-15 central gate: the attempt is identified by hashed
+        // identifier + IP + device context, gated BEFORE any credential
+        // work, and recorded exactly once afterwards. The PUBLIC answer
+        // never changes shape: the same 401 as a wrong password.
+        $attempt = AuthenticationAttemptData::fromInput([
+            'method' => AuthenticationMethod::Password,
+            'identifier' => $identifier,
+            'ip_address' => $request->ip(),
+            'user_agent' => $request->userAgent(),
+            'device_fingerprint' => null,
+        ]);
+
+        $gate = app(AuthenticationSecurityService::class);
+
+        try {
+            $gate->assertAttemptAllowed($attempt);
+        } catch (AuthenticationSecurityException) {
+            // The desk code governs only the audit lane; outwardly the
+            // account is simply 'not found' — refusal itself must not
+            // confirm an identifier exists.
+            return $this->refused();
+        }
+
         $user = User::query()
             ->where($request->identifierIsEmail() ? 'email' : 'username', $identifier)
             ->first();
@@ -60,12 +87,26 @@ final class AuthController
             Hash::check($request->passwordValue(), '$2y$12$H1t0eB4uKk3dTGqAgqR7ge0k1nBqvNqvZ0h1s2p3q4r5s6t7u8v9w');
 
             $this->audit->recordFailure($request, $identifier, 'no_such_account');
+            $gate->record(AuthenticationAttemptData::fromInput([
+                'method' => AuthenticationMethod::Password, 'identifier' => $identifier,
+                'ip_address' => $request->ip(), 'user_agent' => $request->userAgent(),
+            ]), 'failed', 'no_such_account');
+            $gate->loginFailed(null, AuthenticationAttemptData::fromInput([
+                'method' => AuthenticationMethod::Password, 'identifier' => $identifier,
+                'ip_address' => $request->ip(), 'user_agent' => $request->userAgent(),
+            ]));
 
             return $this->refused();
         }
 
         if (! Hash::check($request->passwordValue(), (string) $user->password)) {
             $this->audit->recordFailure($request, $identifier, 'bad_password', (int) $user->getKey());
+            $failedAttempt = AuthenticationAttemptData::fromInput([
+                'user_id' => (int) $user->getKey(), 'method' => AuthenticationMethod::Password,
+                'identifier' => $identifier, 'ip_address' => $request->ip(), 'user_agent' => $request->userAgent(),
+            ]);
+            $gate->record($failedAttempt, 'failed', 'bad_password');
+            $gate->loginFailed((int) $user->getKey(), $failedAttempt);
 
             return $this->refused();
         }
@@ -94,6 +135,18 @@ final class AuthController
         $user->save();
 
         $this->audit->recordLogin($request, $user, $device);
+
+        // The security lane records success + runs the deterministic
+        // post-seat risk review (parks suspicious contexts, envelope
+        // + audit anchors exactly-once). It never blocks the already
+        // correctly-decided pronouncement: parking is desk-side only.
+        $seatAttempt = AuthenticationAttemptData::fromInput([
+            'user_id' => (int) $user->getKey(), 'method' => AuthenticationMethod::Password,
+            'identifier' => $identifier, 'ip_address' => $request->ip(), 'user_agent' => $request->userAgent(),
+        ]);
+        $gate->record($seatAttempt, 'succeeded');
+        $gate->loginSucceeded($user, $seatAttempt);
+        $gate->postSeatReview($user, $seatAttempt);
 
         $expiresInMinutes = config('sanctum.expiration');
 

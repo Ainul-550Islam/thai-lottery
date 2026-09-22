@@ -4,18 +4,23 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Enums\KycStatus;
 use App\Enums\UserStatus;
+use App\Enums\WalletType;
 use App\Support\Admin\AdminAccess;
+use Database\Factories\UserFactory;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
 use Illuminate\Contracts\Auth\MustVerifyEmail as MustVerifyEmailContract;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Carbon;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
 
@@ -34,19 +39,20 @@ use Spatie\Permission\Traits\HasRoles;
  * @property string $password
  * @property UserStatus $status
  * @property string|null $avatar_url
- * @property \Illuminate\Support\Carbon|null $email_verified_at
- * @property \Illuminate\Support\Carbon|null $phone_verified_at
- * @property \Illuminate\Support\Carbon|null $last_login_at
+ * @property Carbon|null $email_verified_at
+ * @property Carbon|null $phone_verified_at
+ * @property Carbon|null $last_login_at
  * @property string|null $last_login_ip
  * @property array<string, mixed>|null $preferences
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
- * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property Carbon|null $deleted_at
  */
 class User extends Authenticatable implements FilamentUser, MustVerifyEmailContract
 {
-    /** @use HasFactory<\Database\Factories\UserFactory> */
+    /** @use HasFactory<UserFactory> */
     use HasApiTokens;
+
     use HasFactory;
     use HasRoles;
     use Notifiable;
@@ -102,7 +108,7 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmailContr
     public function wallet(): HasOne
     {
         return $this->hasOne(Wallet::class)
-            ->where('type', \App\Enums\WalletType::Primary->value);
+            ->where('type', WalletType::Primary->value);
     }
 
     /**
@@ -170,6 +176,16 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmailContr
     }
 
     /**
+     * Every KYC document the player has ever submitted, in any status.
+     *
+     * @return HasMany<KycDocument>
+     */
+    public function kycDocuments(): HasMany
+    {
+        return $this->hasMany(KycDocument::class);
+    }
+
+    /**
      * @return HasMany<AuditLog>
      */
     public function auditLogs(): HasMany
@@ -194,9 +210,74 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmailContr
         return $this->status === UserStatus::Active;
     }
 
+    /**
+     * The player's responsible-gaming record (deposit / wager / single-bet
+     * limits and self-exclusion window), when one has ever been set.
+     *
+     * @return HasOne<ResponsibleGamingLimit, self>
+     */
+    public function responsibleGamingLimit(): HasOne
+    {
+        return $this->hasOne(ResponsibleGamingLimit::class);
+    }
+
+    /**
+     * Whether the player is currently inside a self-exclusion window. The
+     * window is authoritative when its `self_excluded_until` timestamp is in
+     * the future; a past timestamp means the exclusion lapsed and the player
+     * is clear again.
+     */
+    public function isSelfExcluded(): bool
+    {
+        $until = $this->responsibleGamingLimit?->self_excluded_until;
+
+        return $until !== null && $until->isFuture();
+    }
+
+    /**
+     * Whether the player may move money right now. Both gates must pass:
+     * account status is Active AND the player is not self-excluded. A
+     * suspended or closed account, or an Active account mid self-exclusion,
+     * is equally barred from depositing, withdrawing, and betting.
+     */
     public function canTransact(): bool
     {
-        return $this->isActive();
+        return $this->isActive() && ! $this->isSelfExcluded();
+    }
+
+    /**
+     * The player's aggregate KYC standing, derived from the submitted document
+     * set rather than stored anywhere: a verified identity document is the
+     * only thing that can make it Verified (any single approval passes the
+     * player even if earlier submissions were rejected), otherwise the most
+     * recent document's state governs (Pending/UnderReview/Rejected/Expired),
+     * and a player with no submissions at all is Unverified.
+     */
+    public function kycStatus(): KycStatus
+    {
+        /** @var Collection<int, KycDocument> $documents */
+        $documents = $this->kycDocuments()->get();
+
+        if ($documents->isEmpty()) {
+            return KycStatus::Unverified;
+        }
+
+        $verified = $documents->contains(
+            static fn (KycDocument $document): bool => $document->status === KycStatus::Verified,
+        );
+
+        if ($verified) {
+            return KycStatus::Verified;
+        }
+
+        /** @var KycDocument|null $latest */
+        $latest = $documents->sortByDesc(static fn (KycDocument $document): int => (int) $document->id)->first();
+
+        if ($latest !== null && $latest->status instanceof KycStatus) {
+            return $latest->status;
+        }
+
+        return KycStatus::Unverified;
     }
 
     public function isAgent(): bool

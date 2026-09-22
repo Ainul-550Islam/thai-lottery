@@ -25,6 +25,7 @@ enum AuditAction: string
     case SecurityAlert = 'security_alert';
     case DataExport = 'data_export';
     case DataImport = 'data_import';
+    case Reconcile = 'reconcile';
 
     public function label(): string
     {
@@ -50,6 +51,7 @@ enum AuditAction: string
             self::SecurityAlert => 'Security Alert',
             self::DataExport => 'Data Export',
             self::DataImport => 'Data Import',
+            self::Reconcile => 'Financial Reconciliation',
         };
     }
 
@@ -59,7 +61,7 @@ enum AuditAction: string
             self::Create, self::Update, self::Delete => 'data',
             self::Login, self::Logout, self::LoginFailed => 'auth',
             self::PlaceBet, self::CancelBet => 'lottery',
-            self::Deposit, self::Withdraw, self::Payout, self::Refund, self::Reversal => 'finance',
+            self::Deposit, self::Withdraw, self::Payout, self::Refund, self::Reversal, self::Reconcile => 'finance',
             self::RoleAssign, self::RoleRevoke, self::PermissionGrant, self::PermissionRevoke => 'access',
             self::ConfigChange => 'system',
             self::SecurityAlert => 'security',

@@ -227,6 +227,23 @@ return [
             'supports_withdrawal' => true,
         ],
 
+        'promptpay' => [
+            'enabled' => (bool) env('PROMPTPAY_ENABLED', false),
+            'driver' => 'promptpay',
+            // National ID (13 digits), phone (starts with 0, national) or
+            // tax id the merchant registered with a PromptPay bank.
+            'target' => env('PROMPTPAY_TARGET'),
+            'webhook_secret' => env('PROMPTPAY_WEBHOOK_SECRET'),
+            'signature_header' => 'X-PromptPay-Signature',
+            'currency' => 'THB',
+            'supported_currencies' => ['THB'],
+            // A dynamic PromptPay QR cannot lock a chipper for longer than
+            // this; the payer must scan inside the window or get a fresh one.
+            'qr_expiry_minutes' => (int) env('PROMPTPAY_QR_EXPIRY_MINUTES', 15),
+            'supports_deposit' => true,
+            'supports_withdrawal' => false,
+        ],
+
     ],
 
 ];

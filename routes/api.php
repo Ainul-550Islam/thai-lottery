@@ -3,16 +3,29 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Api\V1\BetAmendmentController;
+use App\Http\Controllers\Api\V1\BetCancellationController;
 use App\Http\Controllers\Api\V1\BetController;
 use App\Http\Controllers\Api\V1\BetPurchaseController;
+use App\Http\Controllers\Api\V1\BulkBetController;
 use App\Http\Controllers\Api\V1\DepositController;
 use App\Http\Controllers\Api\V1\DrawController;
+use App\Http\Controllers\Api\V1\DrawResultController;
 use App\Http\Controllers\Api\V1\GloController;
 use App\Http\Controllers\Api\V1\KycController;
+use App\Http\Controllers\Api\V1\PaymentController;
+use App\Http\Controllers\Api\V1\NotificationController;
 use App\Http\Controllers\Api\V1\PaymentWebhookController;
+use App\Http\Controllers\Api\V1\PayoutController;
+use App\Http\Controllers\Api\V1\PrizeClaimController;
 use App\Http\Controllers\Api\V1\ProfileController;
 use App\Http\Controllers\Api\V1\ResponsibleGamingController;
+use App\Http\Controllers\Api\V1\SecurityController;
 use App\Http\Controllers\Api\V1\TicketController;
+use App\Http\Controllers\Api\V1\TicketOwnershipController;
+use App\Http\Controllers\Api\V1\TicketProductController;
+use App\Http\Controllers\Api\V1\TicketVerificationController;
+use App\Http\Controllers\Api\V1\Admin\OperationsController;
 use App\Http\Controllers\Api\V1\WalletController;
 use App\Http\Controllers\Api\V1\WithdrawalController;
 use Illuminate\Support\Facades\Route;
@@ -109,6 +122,42 @@ Route::prefix('v1')
             ->middleware('throttle:bet')
             ->name('bets.purchase');
 
+        // Multi-selection slip and permutation (กลับเลข) purchasing. Both run
+        // selections through the single-bet pipeline sequentially, so they
+        // inherit its money rules — and its tighter limiter.
+        Route::post('/bets/quote', [BulkBetController::class, 'quote'])
+            ->name('bets.quote');
+        Route::post('/bets/purchase-bulk', [BulkBetController::class, 'purchase'])
+            ->middleware('throttle:bet')
+            ->name('bets.purchase-bulk');
+        Route::post('/bets/permutations/preview', [BulkBetController::class, 'previewPermutation'])
+            ->name('bets.permutations.preview');
+        Route::post('/bets/permutations/purchase', [BulkBetController::class, 'purchasePermutation'])
+            ->middleware('throttle:bet')
+            ->name('bets.permutations.purchase');
+
+        // Cancellation and amendment of the caller's own bet. The {bet}
+        // identifier carries the same conservative constraint as the read
+        // endpoints; ownership is enforced by the services' user-scoped
+        // resolution (a foreign bet is a 404, indistinguishable from unknown).
+        Route::post('/bets/{bet}/cancel', [BetCancellationController::class, 'store'])
+            ->where('bet', '[A-Za-z0-9-]{1,64}')
+            ->name('bets.cancel');
+        Route::post('/bets/{bet}/amend', [BetAmendmentController::class, 'store'])
+            ->where('bet', '[A-Za-z0-9-]{1,64}')
+            ->middleware('throttle:bet')
+            ->name('bets.amend');
+
+        // Ticket verification (owner-scoped detail) and share links.
+        Route::post('/tickets/verify', [TicketVerificationController::class, 'verify'])
+            ->name('tickets.verify');
+        Route::post('/tickets/{ticket}/share', [TicketVerificationController::class, 'share'])
+            ->where('ticket', '[A-Za-z0-9-]{1,64}')
+            ->name('tickets.share');
+        Route::delete('/tickets/shares/{share}', [TicketVerificationController::class, 'revokeShare'])
+            ->whereNumber('share')
+            ->name('tickets.shares.revoke');
+
         // Read endpoints. Both accept either the numeric id or the uuid, and both
         // resolve it inside a query already scoped to the authenticated user.
         //
@@ -161,6 +210,26 @@ Route::prefix('v1')
         Route::get('/responsible-gaming', [ResponsibleGamingController::class, 'show'])->name('responsible-gaming.show');
         Route::put('/responsible-gaming/limits', [ResponsibleGamingController::class, 'updateLimits'])->name('responsible-gaming.limits');
         Route::post('/responsible-gaming/self-exclude', [ResponsibleGamingController::class, 'selfExclude'])->name('responsible-gaming.self-exclude');
+        // Batch-14 server-authoritative lanes (additive; legacy lanes above stay).
+        Route::post('/responsible-gaming/limits/pronounce', [ResponsibleGamingController::class, 'pronounceLimit'])->name('responsible-gaming.limits.pronounce');
+        Route::post('/responsible-gaming/self-exclusion', [ResponsibleGamingController::class, 'requestSelfExclusion'])->name('responsible-gaming.self-exclusion.request');
+        Route::get('/responsible-gaming/reality-checks', [ResponsibleGamingController::class, 'realityChecks'])->name('responsible-gaming.reality-checks.index');
+        Route::post('/responsible-gaming/reality-checks/acknowledge', [ResponsibleGamingController::class, 'acknowledgeRealityCheck'])->name('responsible-gaming.reality-checks.acknowledge');
+        Route::get('/responsible-gaming/protection-state', [ResponsibleGamingController::class, 'protectionState'])->name('responsible-gaming.protection-state');
+        // Account security lane (batch-15): MFA, sessions, devices, ledger.
+        Route::post('/security/mfa/challenge', [SecurityController::class, 'challengeMfa'])->name('security.mfa.challenge');
+        Route::post('/security/mfa/verify', [SecurityController::class, 'verifyMfa'])->name('security.mfa.verify');
+        Route::get('/security/sessions', [SecurityController::class, 'sessions'])->name('security.sessions.index');
+        Route::delete('/security/sessions/{reference}', [SecurityController::class, 'revokeSession'])->name('security.sessions.revoke');
+        Route::post('/security/devices/trust', [SecurityController::class, 'trustDevice'])->name('security.devices.trust');
+        Route::delete('/security/devices/{fingerprint}', [SecurityController::class, 'revokeDevice'])->name('security.devices.revoke');
+        Route::get('/security/events', [SecurityController::class, 'eventsSummary'])->name('security.events.summary');
+        // Transactional notifications (batch-16).
+        Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+        Route::post('/notifications/{id}/read', [NotificationController::class, 'markRead'])->name('notifications.read');
+        Route::get('/notifications/preferences', [NotificationController::class, 'preferences'])->name('notifications.preferences.index');
+        Route::put('/notifications/preferences', [NotificationController::class, 'writePreference'])->name('notifications.preferences.write');
+        Route::get('/notifications/status/{fingerprint}', [NotificationController::class, 'status'])->name('notifications.status');
 
         // GLO official reference surface. Read-only: the prize ladder, one draw's
         // recorded official numbers, and the 6-digit ticket checker. A winning
@@ -210,11 +279,57 @@ Route::prefix('v1/deposits')
 | scheme in one place.
 |
 */
+/*
+|--------------------------------------------------------------------------
+| Payment intent surface (batch-12)
+|--------------------------------------------------------------------------
+|
+| Authenticated intent endpoints: the user is the authenticated principal
+| and the wallet is DERIVED from that principal (never accepted from the
+| body as authority). Every money claim is re-proven by the service under
+| a row lock.
+|
+*/
+Route::prefix('v1/payments')
+    ->name('api.v1.payments.')
+    ->middleware(['auth:sanctum', 'active', 'throttle:api'])
+    ->group(function (): void {
+        Route::get('/providers', [PaymentController::class, 'providers'])->name('providers');
+        Route::get('/methods', [PaymentController::class, 'methods'])->name('methods');
+        Route::post('/intents', [PaymentController::class, 'createIntent'])->name('intents.create');
+        Route::get('/intents/{intent}', [PaymentController::class, 'showIntent'])->name('intents.show');
+        Route::post('/intents/{intent}/cancel', [PaymentController::class, 'cancelIntent'])->name('intents.cancel');
+    });
+
 Route::prefix('v1/payments/webhook')
     ->name('api.v1.payments.webhook.')
     ->middleware(['throttle:webhook'])
     ->group(function (): void {
         Route::post('/{gateway}', [PaymentWebhookController::class, 'handle'])->name('handle');
+        // Hardened envelope lane (batch-12): signature verification
+        // BEFORE persistence, exactly-once by fingerprint, async apply.
+        Route::post('/v2/{gateway}', [PaymentWebhookController::class, 'receive'])->name('receive');
+    });
+
+/*
+|--------------------------------------------------------------------------
+| Shared ticket bearer view (public)
+|--------------------------------------------------------------------------
+|
+| The one deliberately public read besides login: anyone holding a 256-bit
+| share token may view the ticket's coarse summary. Possession of the token
+| IS the authorization, so there is no auth middleware; the token constraint
+| (43 base64url characters) refuses malformed input before the query builder,
+| and dead/revoked/unknown tokens all return the same 404.
+|
+*/
+Route::prefix('v1/tickets/shared')
+    ->name('api.v1.tickets.shared.')
+    ->middleware(['throttle:api'])
+    ->group(function (): void {
+        Route::get('/{token}', [TicketVerificationController::class, 'shared'])
+            ->where('token', '[A-Za-z0-9_-]{43}')
+            ->name('show');
     });
 
 /*
@@ -236,4 +351,134 @@ Route::prefix('v1/withdrawals')
         Route::get('/', [WithdrawalController::class, 'index'])->name('index');
         Route::post('/', [WithdrawalController::class, 'store'])->middleware('throttle:withdrawal')->name('store');
         Route::get('/{withdrawal}', [WithdrawalController::class, 'show'])->name('show');
+        Route::post('/{withdrawal}/cancel', [WithdrawalController::class, 'cancel'])->name('cancel');
+    });
+
+/*
+|--------------------------------------------------------------------------
+| Payouts (Batch-7 API surface)
+|--------------------------------------------------------------------------
+|
+| Player + operator surface over payout obligations. The PayoutPolicy
+| owns admittance per payout; the PayoutResource owns sanitization. The
+| cancellation route is a PETITION, never a status mutation — obligations
+| are financial-court territory, the most a player may do through HTTP is
+| state that they no longer want the obligation discharged.
+|
+*/
+Route::prefix('v1/payouts')
+    ->name('api.v1.payouts.')
+    ->middleware(['auth:sanctum', 'active', 'throttle:api'])
+    ->group(function (): void {
+        Route::get('/', [PayoutController::class, 'index'])->name('index');
+        Route::get('/{payout}', [PayoutController::class, 'show'])->name('show');
+        Route::post('/{payout}/cancel', [PayoutController::class, 'cancel'])->name('cancel');
+    });
+
+/*
+|--------------------------------------------------------------------------
+| Prize claims (Batch-7)
+|--------------------------------------------------------------------------
+|
+| Player claim surface: submit a claim against a won bet (owner-scoped,
+| idempotent against the (bet, claimant, method) identity the service
+| derives), inspect one claim, or page through the caller's claim history.
+| All eligibility and duplicate rules live inside PrizeClaimService; the
+| endpoints never duplicate them.
+|
+*/
+Route::prefix('v1/prize-claims')
+    ->name('api.v1.prize-claims.')
+    ->middleware(['auth:sanctum', 'active', 'throttle:api'])
+    ->group(function (): void {
+        Route::get('/', [PrizeClaimController::class, 'index'])->name('index');
+        Route::post('/', [PrizeClaimController::class, 'store'])->middleware('throttle:withdrawal')->name('store');
+        Route::get('/{bet}', [PrizeClaimController::class, 'show'])->name('show');
+    });
+
+/*
+|--------------------------------------------------------------------------
+| Ticket product catalogue (Batch-7)
+|--------------------------------------------------------------------------
+|
+| Public consumers see ACTIVE products only; operators may widen to the
+| full lifecycle with the lane parameter (demoted for everyone else).
+|
+*/
+Route::prefix('v1/ticket-products')
+    ->name('api.v1.ticket-products.')
+    ->middleware(['auth:sanctum', 'active', 'throttle:api'])
+    ->group(function (): void {
+        Route::get('/', [TicketProductController::class, 'index'])->name('index');
+        Route::get('/{product}', [TicketProductController::class, 'show'])->name('show');
+    });
+
+/*
+|--------------------------------------------------------------------------
+| Identity-bound ticket ownership (Batch-7)
+|--------------------------------------------------------------------------
+|
+| Owner-scoped read side only: the caller's OWN bound tickets and one
+| ticket's binding stamp, resolved through the ownership lane itself.
+| Bindings/locks/claims mutate elsewhere (purchase lanes, claim lanes,
+| operator console) — this surface never moves ownership.
+|
+*/
+Route::prefix('v1/ticket-ownership')
+    ->name('api.v1.ticket-ownership.')
+    ->middleware(['auth:sanctum', 'active', 'throttle:api'])
+    ->group(function (): void {
+        Route::get('/', [TicketOwnershipController::class, 'index'])->name('index');
+        Route::get('/{ticket}', [TicketOwnershipController::class, 'show'])->name('show');
+    });
+
+/*
+|--------------------------------------------------------------------------
+| Draw results (Batch-7)
+|--------------------------------------------------------------------------
+|
+| The controlled result pipeline surface: public read of a published
+| result (operators may read the authorized shape), operator staging
+| (MAKER, never publishes), second-pair confirmation (CHECKER), and the
+| final publication gesture, which re-derives its numbers from the
+| CONFIRMED ingestion card — the HTTP layer can never offer publication
+| numbers the checkers never saw.
+|
+*/
+Route::prefix('v1/draws/{draw}/result')
+    ->name('api.v1.draws.result.')
+    ->middleware(['auth:sanctum', 'active', 'throttle:api'])
+    ->group(function (): void {
+        Route::get('/', [DrawResultController::class, 'show'])->name('show');
+        Route::post('/ingest', [DrawResultController::class, 'storeIngest'])->name('ingest');
+        Route::post('/confirm', [DrawResultController::class, 'storeConfirmation'])->name('confirm');
+        Route::post('/publish', [DrawResultController::class, 'storePublication'])->name('publish');
+    });
+
+/*
+|--------------------------------------------------------------------------
+| Admin operations (Batch-17)
+|--------------------------------------------------------------------------
+|
+| The admin command surface: evidence-backed operations lifecycle,
+| provider operational seats, read-only cross-lane reports with
+| checksum-sealed exports, and the audit query view. Admin auth floor
+| here matches the desk gate: sanctum + active; capability floors are
+| asserted inside the controller (four-eyes lanes are workflow, not
+| middleware).
+|
+*/
+Route::prefix('v1/admin')
+    ->name('api.v1.admin.')
+    ->middleware(['auth:sanctum', 'active', 'throttle:api'])
+    ->group(function (): void {
+        Route::post('/operations', [OperationsController::class, 'proposeOperation'])->name('operations.propose');
+        Route::get('/operations', [OperationsController::class, 'listOperations'])->name('operations.index');
+        Route::get('/operations/{fingerprint}', [OperationsController::class, 'showOperation'])->name('operations.show');
+        Route::post('/operations/{fingerprint}/approve', [OperationsController::class, 'approveOperation'])->name('operations.approve');
+        Route::put('/providers/{provider}/state', [OperationsController::class, 'seatProviderState'])->name('providers.state');
+        Route::get('/providers/health', [OperationsController::class, 'providerHealth'])->name('providers.health');
+        Route::post('/reports', [OperationsController::class, 'askReport'])->name('reports.ask');
+        Route::get('/reports/{queryFingerprint}/export', [OperationsController::class, 'exportReport'])->name('reports.export');
+        Route::get('/audit-logs', [OperationsController::class, 'auditQuery'])->name('audit.query');
     });

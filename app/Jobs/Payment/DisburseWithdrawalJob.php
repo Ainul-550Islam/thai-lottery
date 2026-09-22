@@ -33,7 +33,7 @@ use Throwable;
  * 4. Error Discrimination: Transient network timeouts retry with exponential backoff; permanent validation errors fail immediately.
  * 5. Secret Protection: Carries only withdrawal ID; never serializes bank credentials or auth tokens into queue payloads.
  */
-class DisburseWithdrawalJob implements ShouldQueue, ShouldBeUnique
+class DisburseWithdrawalJob implements ShouldBeUnique, ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
@@ -181,7 +181,7 @@ class DisburseWithdrawalJob implements ShouldQueue, ShouldBeUnique
         $withdrawal = Withdrawal::query()->find($this->withdrawalId);
 
         if ($withdrawal instanceof Withdrawal) {
-            $log = new AuditLog();
+            $log = new AuditLog;
             $log->fill([
                 'user_id' => null,
                 'action' => AuditAction::Withdraw,

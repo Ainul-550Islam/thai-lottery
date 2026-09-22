@@ -24,8 +24,7 @@ final class DrawResultPublished implements ShouldBroadcast
     public function __construct(
         public readonly Draw $draw,
         public readonly DrawResult $result,
-    ) {
-    }
+    ) {}
 
     /**
      * @return array<int, Channel>

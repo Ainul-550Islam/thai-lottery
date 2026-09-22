@@ -12,8 +12,10 @@ use App\Enums\WithdrawalStatus;
 use App\Exceptions\FinancialException;
 use App\Exceptions\InsufficientBalanceException;
 use App\Exceptions\WithdrawalException;
+use App\Models\User;
 use App\Models\Wallet;
 use App\Models\Withdrawal;
+use App\Services\ResponsibleGaming\ResponsibleGamingEnforcementService;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -87,6 +89,17 @@ final class WithdrawalService
         $fee = $this->resolveFee($amount, $options);
         $netAmount = $this->resolveNetAmount($amount, $fee);
 
+        // RESPONSIBLE GAMING (batch-14): consumed lane by design —
+        // the facade keeps money-OUT open under exclusion while any
+        // wallet lock from the desk still gates downstream.
+        /** @var User|null $rgUser */
+        $rgUser = User::query()->find($wallet->user_id);
+
+        if ($rgUser instanceof User) {
+            app(ResponsibleGamingEnforcementService::class)
+                ->assertWithdrawalAllowed($rgUser);
+        }
+
         return $this->withinTransaction(function () use ($wallet, $amount, $fee, $netAmount, $method, $normalisedKey, $options): Withdrawal {
             $lockedWallet = $this->locks->lock((int) $wallet->getKey());
 
@@ -115,7 +128,7 @@ final class WithdrawalService
                 );
             }
 
-            $withdrawal = new Withdrawal();
+            $withdrawal = new Withdrawal;
 
             $withdrawal->fill([
                 'reference_number' => $this->generateReferenceNumber(),

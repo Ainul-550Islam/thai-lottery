@@ -11,6 +11,7 @@ use App\Models\AuditLog;
 use App\Models\KycDocument;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
 
@@ -105,7 +106,7 @@ final class KycVerificationService
         $document->rejection_reason = $approved ? null : $rejectionReason;
         $document->save();
 
-        if ($document->user && \Illuminate\Support\Facades\Schema::hasColumn('users', 'kyc_status')) {
+        if ($document->user && Schema::hasColumn('users', 'kyc_status')) {
             $document->user->kyc_status = $newStatus;
             $document->user->save();
         }

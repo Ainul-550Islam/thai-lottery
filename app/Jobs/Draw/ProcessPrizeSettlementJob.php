@@ -35,7 +35,7 @@ use Throwable;
  * 4. After-Commit Dispatch: Never processes until preceding database commits have succeeded.
  * 5. Error Discrimination: Business validation failures fail permanently; transient DB errors retry.
  */
-class ProcessPrizeSettlementJob implements ShouldQueue, ShouldBeUnique
+class ProcessPrizeSettlementJob implements ShouldBeUnique, ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
@@ -166,7 +166,7 @@ class ProcessPrizeSettlementJob implements ShouldQueue, ShouldBeUnique
         $draw = Draw::query()->find($this->drawId);
 
         if ($draw instanceof Draw) {
-            $log = new AuditLog();
+            $log = new AuditLog;
             $log->fill([
                 'user_id' => null,
                 'action' => AuditAction::Payout,

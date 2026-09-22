@@ -5,20 +5,25 @@ declare(strict_types=1);
 namespace App\Services\Payment;
 
 use App\DTOs\Payment\PaymentProcessingResult;
+use App\DTOs\Payment\PaymentWebhookData;
 use App\DTOs\Payment\WebhookPayload;
 use App\Enums\AuditAction;
 use App\Enums\DepositStatus;
 use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
+use App\Enums\PaymentWebhookStatus;
 use App\Enums\RiskLevel;
 use App\Enums\WithdrawalStatus;
 use App\Exceptions\DepositException;
 use App\Exceptions\FinancialException;
+use App\Exceptions\PaymentWebhookException;
 use App\Exceptions\WithdrawalException;
+use App\Listeners\RecordPaymentWebhookAudit;
 use App\Models\AuditLog;
 use App\Models\Deposit;
 use App\Models\FinancialTransaction;
 use App\Models\Payment;
+use App\Models\PaymentWebhook;
 use App\Models\Withdrawal;
 use App\Services\Finance\DepositApprovalService;
 use App\Services\Finance\DepositCompletionService;
@@ -62,6 +67,8 @@ class PaymentWebhookService
         private readonly WithdrawalCompletionService $withdrawalCompletion,
         private readonly FinancialReversalService $reversalService,
         private readonly FinancialStateTransitionService $transitions,
+        private readonly ?PaymentWebhookVerificationService $webhookVerification = null,
+        private readonly ?PaymentCallbackService $paymentCallbacks = null,
     ) {
     }
 
@@ -682,4 +689,192 @@ class PaymentWebhookService
         ]);
         $log->save();
     }
+
+
+    /* =====================================================================
+     * Batch-12 hardened envelope lane (additive): verify BEFORE trust,
+     * persist BEFORE apply, exactly-once by fingerprint, duplicates as
+     * no-op evidence — never altering the legacy handleWebhookRequest
+     * lane above.
+     * ================================================================= */
+
+    /**
+     * Ingress one normalized webhook envelope: persist the evidence,
+     * stamp its Rejected pronunciation when verification refuses, apply
+     * its facts once when it verifies.
+     *
+     * @return array{webhook: PaymentWebhook, status: PaymentWebhookStatus, outcome: string}
+     *
+     * @throws PaymentWebhookException
+     */
+    public function processEnvelope(PaymentWebhookData $envelope): array
+    {
+        return DB::transaction(function () use ($envelope): array {
+            // SIGHTING-FIRST: identical bytes seen before with the same
+            // declared identity is a duplicate sighting — a no-op with
+            // its own evidence, never a second application.
+            /** @var PaymentWebhook|null $existing */
+            $existing = PaymentWebhook::query()
+                ->lockForUpdate()
+                ->where('payload_fingerprint', $envelope->payloadFingerprint)
+                ->first();
+
+            if ($existing instanceof PaymentWebhook) {
+                $factsMatch = (string) $existing->provider === $envelope->providerCode
+                    && (string) $existing->event_id === $envelope->eventId
+                    && (string) $existing->event_type === $envelope->eventType;
+
+                if (! $factsMatch) {
+                    throw PaymentWebhookException::duplicate($envelope->payloadFingerprint);
+                }
+
+                $existing->sightings = (int) $existing->sightings + 1;
+                $existing->save();
+
+                RecordPaymentWebhookAudit::from($existing, PaymentWebhookStatus::Duplicate, sprintf('duplicate sighting #%d', $existing->sightings));
+
+                return ['webhook' => $existing, 'status' => PaymentWebhookStatus::Duplicate, 'outcome' => 'duplicate'];
+            }
+
+            // VERIFY BEFORE TRUST. Refusal is still evidence.
+            try {
+                $this->webhookVerification?->verify($envelope);
+            } catch (PaymentWebhookException $refusal) {
+                $rejected = new PaymentWebhook();
+                $rejected->fill([
+                    'webhook_key' => $envelope->webhookKey(),
+                    'provider' => $envelope->providerCode,
+                    'event_id' => $envelope->eventId,
+                    'event_type' => $envelope->eventType,
+                    'signature' => $envelope->signature,
+                    'payload' => $envelope->payload,
+                    'payload_fingerprint' => $envelope->payloadFingerprint,
+                    'status_reason' => $refusal->errorCode(),
+                    'received_at' => now(),
+                    'rejected_at' => now(),
+                    'sightings' => 1,
+                    'metadata' => [],
+                ]);
+                $rejected->status = PaymentWebhookStatus::Rejected;
+                $rejected->save();
+
+                RecordPaymentWebhookAudit::from($rejected, PaymentWebhookStatus::Rejected, $refusal->errorCode());
+
+                throw $refusal;
+            }
+
+            $row = new PaymentWebhook();
+            $row->fill([
+                'webhook_key' => $envelope->webhookKey(),
+                'provider' => $envelope->providerCode,
+                'event_id' => $envelope->eventId,
+                'event_type' => $envelope->eventType,
+                'signature' => $envelope->signature,
+                'payload' => $envelope->payload,
+                'payload_fingerprint' => $envelope->payloadFingerprint,
+                'received_at' => now(),
+                'sightings' => 1,
+                'metadata' => [],
+            ]);
+            $row->status = PaymentWebhookStatus::Verified;
+            $row->verified_at = now();
+            $row->save();
+
+            RecordPaymentWebhookAudit::from($row, PaymentWebhookStatus::Verified, 'signature and identity proved');
+
+            $applied = false;
+
+            // APPLY ONCE. A miss (no internal paper) leaves the row
+            // Verified with the refusal as status_reason — the async job
+            // may retry application WITHOUT re-scanning for paper shape.
+            if ($this->paymentCallbacks !== null) {
+                try {
+                    $callback = $this->paymentCallbacks->normalizeFromPayload(
+                        $envelope->providerCode,
+                        $envelope->payload + ['payload_fingerprint' => $envelope->payloadFingerprint, 'signature' => $envelope->signature],
+                    );
+
+                    $this->paymentCallbacks->apply($callback);
+
+                    $row->status = PaymentWebhookStatus::Applied;
+                    $row->applied_at = now();
+                    $row->save();
+
+                    RecordPaymentWebhookAudit::from($row, PaymentWebhookStatus::Applied, 'facts applied to internal paper');
+                    $applied = true;
+                } catch (\App\Exceptions\PaymentReconciliationException $applicationRefusal) {
+                    $row->status_reason = $applicationRefusal->errorCode().': '.\Illuminate\Support\Str::limit($applicationRefusal->getMessage(), 200, '');
+                    $row->save();
+
+                    RecordPaymentWebhookAudit::from($row, PaymentWebhookStatus::Verified, 'verified; application deferred ('.$applicationRefusal->errorCode().')');
+                }
+            }
+
+            return ['webhook' => $row, 'status' => $row->status, 'outcome' => $applied ? 'applied' : 'verified'];
+        });
+    }
+
+    /**
+     * (Re)apply a PERSISTED envelope — the async job's exact verb.
+     * Re-proves the signature against the stored bytes (replay-window
+     * relaxed; the envelope is already custody of the house), then runs
+     * normalization + application once more, cost-free when the
+     * internal paper already carries the facts.
+     *
+     * @throws PaymentWebhookException
+     * @throws \App\Exceptions\PaymentReconciliationException
+     */
+    public function applyPersisted(PaymentWebhook $webhook): PaymentWebhook
+    {
+        return DB::transaction(function () use ($webhook): PaymentWebhook {
+            /** @var PaymentWebhook|null $locked */
+            $locked = PaymentWebhook::query()->lockForUpdate()->find((int) $webhook->getKey());
+
+            if (! $locked instanceof PaymentWebhook) {
+                throw PaymentWebhookException::notFound((string) $webhook->webhook_key);
+            }
+
+            if ($locked->status === PaymentWebhookStatus::Applied) {
+                return $locked; // exactly-once, already spoken
+            }
+
+            if ($locked->status === PaymentWebhookStatus::Rejected) {
+                throw PaymentWebhookException::malformed('a rejected envelope may never be applied');
+            }
+
+            $envelope = PaymentWebhookData::fromInput(
+                providerCode: (string) $locked->provider,
+                eventId: (string) $locked->event_id,
+                eventType: (string) $locked->event_type,
+                signature: $locked->signature,
+                receivedAtIso: $locked->received_at?->toIso8601String() ?? now()->toIso8601String(),
+                payload: is_array($locked->payload) ? $locked->payload : [],
+                payloadFingerprint: (string) $locked->payload_fingerprint,
+            );
+
+            // Re-prove the stored bytes (window relaxed; custody proved).
+            $this->webhookVerification?->verify($envelope, allowStale: true);
+
+            if ($this->paymentCallbacks === null) {
+                throw PaymentWebhookException::malformed('callback lane unavailable');
+            }
+
+            $callback = $this->paymentCallbacks->normalizeFromPayload(
+                $envelope->providerCode,
+                $envelope->payload + ['payload_fingerprint' => $envelope->payloadFingerprint, 'signature' => $envelope->signature],
+            );
+
+            $this->paymentCallbacks->apply($callback);
+
+            $locked->status = PaymentWebhookStatus::Applied;
+            $locked->applied_at = now();
+            $locked->status_reason = null;
+            $locked->save();
+
+            RecordPaymentWebhookAudit::from($locked, PaymentWebhookStatus::Applied, 'persisted envelope applied (job)');
+
+            return $locked;
+        });
+    }
 }
+

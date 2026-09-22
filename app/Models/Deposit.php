@@ -8,12 +8,14 @@ use App\Enums\Currency;
 use App\Enums\DepositStatus;
 use App\Enums\PaymentMethod;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
 
 /**
  * A request to add money to a wallet.
@@ -42,15 +44,16 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property string $amount
  * @property string $fee
  * @property string $net_amount
- * @property \Illuminate\Support\Carbon|null $confirmed_at
- * @property \Illuminate\Support\Carbon|null $failed_at
+ * @property Carbon|null $confirmed_at
+ * @property Carbon|null $failed_at
  * @property string|null $failure_reason
  * @property array<string, mixed>|null $metadata
  */
 class Deposit extends Model
 {
-    /** @use HasFactory<\Illuminate\Database\Eloquent\Factories\Factory> */
+    /** @use HasFactory<Factory> */
     use HasFactory;
+
     use SoftDeletes;
 
     /**

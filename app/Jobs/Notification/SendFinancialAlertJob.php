@@ -66,7 +66,7 @@ class SendFinancialAlertJob implements ShouldQueue
             $this->metadata,
         );
 
-        $log = new AuditLog();
+        $log = new AuditLog;
         $log->fill([
             'user_id' => null,
             'action' => AuditAction::Reconcile,

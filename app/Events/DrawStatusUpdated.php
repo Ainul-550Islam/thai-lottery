@@ -22,8 +22,7 @@ final class DrawStatusUpdated implements ShouldBroadcast
 
     public function __construct(
         public readonly Draw $draw,
-    ) {
-    }
+    ) {}
 
     /**
      * @return array<int, Channel>

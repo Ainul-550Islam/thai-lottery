@@ -9,6 +9,7 @@ use App\DTOs\BetPurchaseResult;
 use App\Exceptions\BetPurchaseConcurrencyException;
 use App\Exceptions\BetPurchaseException;
 use App\Models\Bet;
+use App\Services\Agent\AgentCommissionAccrualService;
 use Illuminate\Contracts\Config\Repository as ConfigRepository;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
@@ -81,6 +82,7 @@ final class BetPurchaseTransactionService
         private readonly BetPurchaseTicketService $tickets,
         private readonly BetPurchaseLedgerService $ledger,
         private readonly BetPurchaseIdempotencyService $idempotency,
+        private readonly AgentCommissionAccrualService $commissionAccrual,
         private readonly ConfigRepository $config,
     ) {
     }
@@ -174,6 +176,15 @@ final class BetPurchaseTransactionService
         $ticket = $this->tickets->confirm($ticket);
 
         $this->assertExactlyOneItem($bet, $context);
+
+        // 11. Agent commissions accrue on real, paid turnover — never on an
+        // unpaid, unposted or half-promoted purchase. Accruing here, inside the
+        // same atomic unit, means a purchase that later cannot commit takes its
+        // commission rows down with it, and a committed purchase can never
+        // have existed without its commissions being written. The accrual
+        // service itself resolves the referral chain (an unattributed player
+        // yields no rows) and skips ineligible agents.
+        $this->commissionAccrual->accrueForBet($bet);
 
         return BetPurchaseResult::purchased(
             bet: $bet,

@@ -22,8 +22,7 @@ final class DepositStatusUpdated implements ShouldBroadcast
 
     public function __construct(
         public readonly Deposit $deposit,
-    ) {
-    }
+    ) {}
 
     /**
      * @return array<int, PrivateChannel>

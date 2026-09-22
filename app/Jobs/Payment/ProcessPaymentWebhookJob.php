@@ -31,7 +31,7 @@ use Throwable;
  * 4. Error Discrimination: Business validation failures (amount/currency mismatch) fail permanently; transient DB errors retry.
  * 5. Secret Protection: Does NOT carry raw webhook secrets in payload.
  */
-class ProcessPaymentWebhookJob implements ShouldQueue, ShouldBeUnique
+class ProcessPaymentWebhookJob implements ShouldBeUnique, ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
@@ -114,7 +114,7 @@ class ProcessPaymentWebhookJob implements ShouldQueue, ShouldBeUnique
             'error' => $exception->getMessage(),
         ]);
 
-        $log = new AuditLog();
+        $log = new AuditLog;
         $log->fill([
             'user_id' => null,
             'action' => AuditAction::Deposit,

@@ -8,10 +8,12 @@ use App\Enums\BetType;
 use App\Enums\LimitStatus;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
 
 /**
  * Exposure limit for one number, in one bet type, in one draw.
@@ -35,15 +37,16 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property string|null $maximum_payout_exposure
  * @property string $current_payout_exposure
  * @property LimitStatus $status
- * @property \Illuminate\Support\Carbon|null $exceeded_at
+ * @property Carbon|null $exceeded_at
  * @property array<string, mixed>|null $metadata
  * @property-read string $remaining_amount
  * @property-read string $utilisation_percent
  */
 class NumberLimit extends Model
 {
-    /** @use HasFactory<\Illuminate\Database\Eloquent\Factories\Factory> */
+    /** @use HasFactory<Factory> */
     use HasFactory;
+
     use SoftDeletes;
 
     /**

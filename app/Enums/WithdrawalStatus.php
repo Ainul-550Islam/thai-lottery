@@ -21,6 +21,14 @@ namespace App\Enums;
  * terminal. No case needed to be added - the audited enum already covers the
  * whole pending -> under_review -> approved -> processing -> completed pipeline.
  *
+ * WHAT WAS ADDED FOR THE KYC MONEY-OUT GATE (BATCH 6)
+ * The KycRequired case: a pending/under-review withdrawal that discovered an
+ * identity-evidence gap is detained there until the gate passes it (or refuses
+ * it). Money semantics: NO funds are reserved in kyc_required, exactly like
+ * pending/under_review - a hold before approval would lock money against a
+ * request that may never pass. Entry is an addition only; every audited case,
+ * value and method above keeps its original behaviour.
+ *
  * MONEY MEANING OF EACH STATE
  * pending / under_review : no funds reserved yet.
  * approved / processing   : the amount is held in wallets.locked_balance.
@@ -34,6 +42,7 @@ enum WithdrawalStatus: string
 {
     case Pending = 'pending';
     case UnderReview = 'under_review';
+    case KycRequired = 'kyc_required';
     case Approved = 'approved';
     case Processing = 'processing';
     case Completed = 'completed';
@@ -76,6 +85,7 @@ enum WithdrawalStatus: string
         return match ($this) {
             self::Pending => 'Pending',
             self::UnderReview => 'Under Review',
+            self::KycRequired => 'KYC Required',
             self::Approved => 'Approved',
             self::Processing => 'Processing',
             self::Completed => 'Completed',
@@ -124,8 +134,9 @@ enum WithdrawalStatus: string
     public function allowedTransitions(): array
     {
         return match ($this) {
-            self::Pending => [self::UnderReview, self::Approved, self::Rejected, self::Cancelled, self::Failed],
-            self::UnderReview => [self::Approved, self::Rejected, self::Cancelled, self::Failed],
+            self::Pending => [self::UnderReview, self::KycRequired, self::Approved, self::Rejected, self::Cancelled, self::Failed],
+            self::UnderReview => [self::KycRequired, self::Approved, self::Rejected, self::Cancelled, self::Failed],
+            self::KycRequired => [self::Approved, self::Rejected, self::Cancelled, self::Failed],
             self::Approved => [self::Processing, self::Completed, self::Rejected, self::Cancelled, self::Failed],
             self::Processing => [self::Completed, self::Failed],
             self::Completed, self::Rejected, self::Failed, self::Cancelled => [],
@@ -144,12 +155,12 @@ enum WithdrawalStatus: string
 
     public function canReject(): bool
     {
-        return in_array($this, [self::Pending, self::UnderReview, self::Approved], true);
+        return in_array($this, [self::Pending, self::UnderReview, self::KycRequired, self::Approved], true);
     }
 
     public function canCancel(): bool
     {
-        return in_array($this, [self::Pending, self::UnderReview, self::Approved], true);
+        return in_array($this, [self::Pending, self::UnderReview, self::KycRequired, self::Approved], true);
     }
 
     /**
@@ -194,6 +205,7 @@ enum WithdrawalStatus: string
         return match ($this) {
             self::Pending => 'yellow',
             self::UnderReview => 'blue',
+            self::KycRequired => 'orange',
             self::Approved => 'blue',
             self::Processing => 'blue',
             self::Completed => 'green',

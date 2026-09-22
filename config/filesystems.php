@@ -9,13 +9,11 @@ return [
         'local' => [
             'driver' => 'local',
             'root' => storage_path('app/private'),
-            'serve' => [
-                'root' => storage_path('app/public'),
-                'headers' => [
-                    'Access-Control-Allow-Origin' => '*',
-                    'Vary' => 'Origin',
-                ],
-            ],
+            // Boolean form required by this framework's FilesystemAdapter
+            // (shouldServeSignedUrls(bool)); local artifacts are never
+            // served over HTTP, so false preserves the desk's semantics.
+            'serve' => false,
+            'throw' => false,
         ],
 
         'public' => [
